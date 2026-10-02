@@ -19,3 +19,22 @@
 - Phase 3: invoice CRUD, auto `05-X` with yearly reset, received date defaults to today, bank account, payment status, export, and tax number on the form
 - Do not import the old `pratki.db` unless asked
 - Restart the server before testing backend changes
+
+## 2026-10-02 — Session 2 (invoice book)
+
+### What was done
+- Installed Flask and openpyxl in `office-log-system/.venv`. System Python refused a global install.
+- Phase 3: invoice add, edit, delete, search, year/date/status filters, table and grouped view, CSV/Excel export
+- New invoices suggest `05-1`, `05-2`, … from the received-date year. The number can be edited. A duplicate in the same year is rejected.
+- Received date starts as today. Choosing a partner copies the name and tax number; later partner edits do not rewrite the invoice.
+- Added `supplier_name` so the paper-book назив is stored on the invoice, not only through the partner link.
+- API check passed against a temporary database: numbering, yearly reset, filters, snapshot, user/admin rights, CSV, and Excel.
+
+### Next
+- Phase 4: polish, Windows test, backup notes. Partners UI is already in place.
+- Restart the server before testing. Do not import `pratki.db` unless asked.
+
+### Follow-up the same day
+- Removed CSV export buttons. Both books export Excel only.
+- Removed the navbar password button for every role.
+- Admin can edit any user from Корисници: username, role, and password. Blank password keeps the old one. The last admin cannot be deleted or demoted.

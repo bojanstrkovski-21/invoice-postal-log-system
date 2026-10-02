@@ -115,12 +115,61 @@ def create_user():
     return jsonify(dict(row)), 201
 
 
+@app.route('/api/users/<int:user_id>', methods=['PUT'])
+@admin_required
+def update_user(user_id):
+    data = request.get_json(silent=True) or {}
+    username = data.get('username', '').strip()
+    password = data.get('password', '').strip()
+    role = data.get('role', 'user')
+    if not username:
+        return jsonify({'error': 'Username is required'}), 400
+    if role not in ('admin', 'user'):
+        return jsonify({'error': 'Invalid role'}), 400
+    db = get_db()
+    existing = db.execute('SELECT id, role FROM users WHERE id = ?', (user_id,)).fetchone()
+    if not existing:
+        return jsonify({'error': 'Not found'}), 404
+    if existing['role'] == 'admin' and role != 'admin':
+        admins = db.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'").fetchone()[0]
+        if admins <= 1:
+            return jsonify({'error': 'The last admin cannot be changed to a normal user'}), 400
+    try:
+        if password:
+            db.execute(
+                'UPDATE users SET username = ?, password_hash = ?, role = ? WHERE id = ?',
+                (username, generate_password_hash(password), role, user_id)
+            )
+        else:
+            db.execute(
+                'UPDATE users SET username = ?, role = ? WHERE id = ?',
+                (username, role, user_id)
+            )
+        db.commit()
+    except sqlite3.IntegrityError:
+        db.rollback()
+        return jsonify({'error': 'Username already exists'}), 409
+    if user_id == session['user_id']:
+        session['username'] = username
+        session['role'] = role
+    row = db.execute(
+        'SELECT id, username, role, created_at FROM users WHERE id = ?',
+        (user_id,)
+    ).fetchone()
+    return jsonify(dict(row))
+
+
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
 @admin_required
 def delete_user(user_id):
     if user_id == session['user_id']:
         return jsonify({'error': 'Cannot delete your own account'}), 400
     db = get_db()
+    target = db.execute('SELECT role FROM users WHERE id = ?', (user_id,)).fetchone()
+    if target and target['role'] == 'admin':
+        admins = db.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'").fetchone()[0]
+        if admins <= 1:
+            return jsonify({'error': 'The last admin cannot be deleted'}), 400
     db.execute('DELETE FROM users WHERE id = ?', (user_id,))
     db.commit()
     return jsonify({'ok': True})
@@ -186,22 +235,6 @@ def update_partner(partner_id):
 def delete_partner(partner_id):
     db = get_db()
     db.execute('DELETE FROM partners WHERE id = ?', (partner_id,))
-    db.commit()
-    return jsonify({'ok': True})
-
-
-@app.route('/api/users/<int:user_id>/password', methods=['PUT'])
-@admin_required
-def change_user_password(user_id):
-    data = request.get_json(silent=True) or {}
-    new_pw = data.get('password', '').strip()
-    if not new_pw:
-        return jsonify({'error': 'Password is required'}), 400
-    db = get_db()
-    db.execute(
-        'UPDATE users SET password_hash = ? WHERE id = ?',
-        (generate_password_hash(new_pw), user_id)
-    )
     db.commit()
     return jsonify({'ok': True})
 

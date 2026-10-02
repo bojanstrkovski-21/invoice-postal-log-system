@@ -67,6 +67,7 @@ def init_db():
                 received_date       TEXT NOT NULL,
                 due_date            TEXT,
                 partner_id          INTEGER REFERENCES partners(id) ON DELETE SET NULL,
+                supplier_name       TEXT,
                 tax_number          TEXT,
                 bank_account        TEXT,
                 amount              REAL,
@@ -87,6 +88,7 @@ def init_db():
         _add_column(conn, 'partners', 'tax_number', 'TEXT')
         _add_column(conn, 'packages', 'tax_number', 'TEXT')
         _add_column(conn, 'invoices', 'tax_number', 'TEXT')
+        _add_column(conn, 'invoices', 'supplier_name', 'TEXT')
         count = conn.execute('SELECT COUNT(*) FROM users').fetchone()[0]
         if count == 0:
             conn.execute(

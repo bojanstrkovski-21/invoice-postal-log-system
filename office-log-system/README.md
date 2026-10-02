@@ -5,9 +5,9 @@ One local web app, one login, two modules:
 - **Книга за пошта / Postal Log** — outgoing packages
 - **Влезни фактури / Incoming Invoices** — received invoices
 
-Postal log is working: add, edit, delete, search, year and date filters, table and grouped view, CSV/Excel export. Incoming invoices are next.
+Both books are working: add, edit, delete, search, year and date filters, table and grouped view, CSV/Excel export.
 
-Даночен број is stored on partners, on each package, and on invoices.
+Даночен број is stored on partners, on each package, and on each invoice. Invoice numbers use `05-1`, `05-2`, and start again each year.
 
 ## Tech stack
 

@@ -291,6 +291,18 @@
     .group-card.open .group-body { display: block; }
     .modal.wide { max-width: 640px; }
     .hint { font-size: 12px; color: var(--muted); }
+    .status-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 4px;
+      font-size: 11px; font-weight: 600; white-space: nowrap;
+    }
+    .status-pending { background: rgba(214,168,72,0.2); color: #c9a14a; }
+    html[data-theme="light"] .status-pending { color: #8a6418; }
+    .status-paid { background: rgba(72,160,120,0.18); color: #6fbf9a; }
+    html[data-theme="light"] .status-paid { color: #1f7a52; }
+    .status-cancelled { background: rgba(201,79,109,0.15); color: var(--danger); }
+    td.amount { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .form-row-3 { display: grid; grid-template-columns: 1.2fr 0.7fr 1fr; gap: 12px; }
+    #invSearchInput { min-width: 220px; }
 
     #loginScreen {
       position: fixed; inset: 0; z-index: 400;
@@ -350,7 +362,8 @@
     .modal {
       background: var(--card); border-radius: 12px;
       width: 100%; max-width: 560px;
-      box-shadow: var(--shadow-lg); overflow: hidden;
+      max-height: calc(100vh - 32px);
+      box-shadow: var(--shadow-lg); overflow: auto;
     }
     .modal-header {
       padding: 18px 22px 16px; border-bottom: 1px solid var(--border);
@@ -386,11 +399,11 @@
     .hidden { display: none !important; }
 
     @media (max-width: 720px) {
-      .module-grid, .form-row, .form-row-2 { grid-template-columns: 1fr; }
+      .module-grid, .form-row, .form-row-2, .form-row-3 { grid-template-columns: 1fr; }
       .main { padding: 18px 14px 36px; }
       .header { padding: 0 12px; }
-      .user-name, .col-addr, .col-city { display: none; }
-      #searchInput { min-width: 160px; }
+      .user-name, .col-addr, .col-city, .col-inv-extra { display: none; }
+      #searchInput, #invSearchInput { min-width: 160px; }
     }
   </style>
 </head>
@@ -436,9 +449,6 @@
     </button>
     <button class="btn btn-secondary btn-sm hidden" id="btnUsers" onclick="openUsersModal()">
       👤 <span id="lblUsers">Корисници</span>
-    </button>
-    <button class="btn btn-secondary btn-sm hidden" id="btnPassword" onclick="openPasswordModal()">
-      <span id="lblPassword">Лозинка</span>
     </button>
     <button class="btn btn-secondary btn-sm hidden" id="btnLogout" onclick="doLogout()">
       <span id="lblLogout">Одјава</span>
@@ -514,7 +524,6 @@
       <div class="results-count" id="resultsCount"></div>
       <div class="content-actions">
         <button class="btn btn-primary btn-sm" onclick="openPackageModal()">＋ <span id="btnAdd">Додади пратка</span></button>
-        <button class="btn btn-secondary btn-sm" onclick="exportPostal('csv')">↓ <span id="btnCSV">Извоз CSV</span></button>
         <button class="btn btn-secondary btn-sm" onclick="exportPostal('xlsx')">↓ <span id="btnXLSX">Извоз Excel</span></button>
       </div>
     </div>
@@ -522,16 +531,56 @@
   </section>
 
   <section id="viewInvoices" class="hidden">
-    <div class="module-shell">
-      <h2 id="invTitle">Влезни фактури</h2>
-      <p class="lead" id="invLead">Книга за примени фактури. Записите доаѓаат во следниот чекор.</p>
-      <ul class="checklist">
-        <li id="invItem1">Внатрешен број 05-1, 05-2… се ресетира секоја година.</li>
-        <li id="invItem2">Датум на прием е денес, и може да се смени.</li>
-        <li id="invItem3">Добавувач, даночен број, број на фактура, износ и сметка.</li>
-      </ul>
-      <p class="phase-note" id="invNote">Модулот е поврзан. Внес на фактури е следен чекор.</p>
+    <div class="toolbar">
+      <div class="filter-group">
+        <span class="filter-label" id="lblInvSearch">Пребарај</span>
+        <input type="text" id="invSearchInput" placeholder="Добавувач, број, сметка, даночен број..." oninput="onInvoiceSearch()">
+      </div>
+      <div class="filter-group">
+        <span class="filter-label" id="lblInvYear">Година</span>
+        <select id="invYearSelect" onchange="loadInvoices()">
+          <option value="" id="optInvAllYears">Сите години</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label" id="lblInvStatus">Статус</span>
+        <select id="invStatus" onchange="loadInvoices()">
+          <option value="" id="optInvAllStatus">Сите статуси</option>
+          <option value="pending" id="optStatusPending">Неплатена</option>
+          <option value="paid" id="optStatusPaid">Платена</option>
+          <option value="cancelled" id="optStatusCancelled">Откажана</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label" id="lblInvDateFrom">Од датум</span>
+        <div class="date-wrap">
+          <input type="text" id="invDateFromTxt" placeholder="dd.mm.yyyy" maxlength="10" oninput="onDateType('invDateFromTxt','invDateFrom',loadInvoices)">
+          <button type="button" class="cal-btn" onclick="triggerPicker('invDateFrom')">▦</button>
+          <input type="date" id="invDateFrom" onchange="onDatePick('invDateFrom','invDateFromTxt');loadInvoices()">
+        </div>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label" id="lblInvDateTo">До датум</span>
+        <div class="date-wrap">
+          <input type="text" id="invDateToTxt" placeholder="dd.mm.yyyy" maxlength="10" oninput="onDateType('invDateToTxt','invDateTo',loadInvoices)">
+          <button type="button" class="cal-btn" onclick="triggerPicker('invDateTo')">▦</button>
+          <input type="date" id="invDateTo" onchange="onDatePick('invDateTo','invDateToTxt');loadInvoices()">
+        </div>
+      </div>
+      <div class="toolbar-spacer"></div>
+      <div class="view-toggle">
+        <button class="view-btn active" id="invViewTableBtn" onclick="setInvoiceView('table')"><span id="lblInvTable">Табела</span></button>
+        <button class="view-btn" id="invViewGroupBtn" onclick="setInvoiceView('group')"><span id="lblInvGroup">По добавувач</span></button>
+      </div>
     </div>
+    <div class="content-header">
+      <div class="results-count" id="invResultsCount"></div>
+      <div class="content-actions">
+        <button class="btn btn-primary btn-sm" onclick="openInvoiceModal()">＋ <span id="btnAddInvoice">Додади фактура</span></button>
+        <button class="btn btn-secondary btn-sm" onclick="exportInvoices('xlsx')">↓ <span id="btnInvXLSX">Извоз Excel</span></button>
+      </div>
+    </div>
+    <div id="invoiceContent"></div>
   </section>
 </main>
 
@@ -598,6 +647,100 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="invoiceOverlay">
+  <div class="modal wide">
+    <div class="modal-header">
+      <span class="modal-title" id="invoiceTitle">Додади фактура</span>
+      <button class="modal-close" onclick="closeInvoiceModal()" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-error" id="invoiceError"></div>
+      <div class="form-group">
+        <label id="lInvPartner">Партнер</label>
+        <select id="iPartner" onchange="applyInvoicePartner()"></select>
+        <span class="hint" id="invPartnerHint">Изборот ги пополнува називот и даночниот број. Може да се поправат.</span>
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label id="lInvReceived">Датум на прием <span class="required-star">*</span></label>
+          <div class="date-wrap">
+            <input type="text" id="iReceivedTxt" placeholder="dd.mm.yyyy" maxlength="10" oninput="onDateType('iReceivedTxt','iReceived', onInvoiceReceivedChange)">
+            <button type="button" class="cal-btn" onclick="triggerPicker('iReceived')">▦</button>
+            <input type="date" id="iReceived" onchange="onDatePick('iReceived','iReceivedTxt'); onInvoiceReceivedChange()">
+          </div>
+        </div>
+        <div class="form-group">
+          <label id="lInvInternal">Внатрешен број <span class="required-star">*</span></label>
+          <input type="text" id="iInternal" placeholder="05-1" oninput="iInternalTouched = true">
+          <span class="hint" id="invNumberHint">05-1, 05-2… се ресетира секоја година.</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label id="lInvSupplier">Назив <span class="required-star">*</span></label>
+        <input type="text" id="iSupplier">
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label id="lInvNumber">Број на фактура</label>
+          <input type="text" id="iNumber">
+        </div>
+        <div class="form-group">
+          <label id="lInvTax">Даночен број</label>
+          <input type="text" id="iTax">
+        </div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label id="lInvDate">Датум на фактура</label>
+          <div class="date-wrap">
+            <input type="text" id="iInvoiceDateTxt" placeholder="dd.mm.yyyy" maxlength="10" oninput="onDateType('iInvoiceDateTxt','iInvoiceDate')">
+            <button type="button" class="cal-btn" onclick="triggerPicker('iInvoiceDate')">▦</button>
+            <input type="date" id="iInvoiceDate" onchange="onDatePick('iInvoiceDate','iInvoiceDateTxt')">
+          </div>
+        </div>
+        <div class="form-group">
+          <label id="lInvDue">Рок на плаќање</label>
+          <div class="date-wrap">
+            <input type="text" id="iDueTxt" placeholder="dd.mm.yyyy" maxlength="10" oninput="onDateType('iDueTxt','iDue')">
+            <button type="button" class="cal-btn" onclick="triggerPicker('iDue')">▦</button>
+            <input type="date" id="iDue" onchange="onDatePick('iDue','iDueTxt')">
+          </div>
+        </div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group">
+          <label id="lInvAmount">Износ</label>
+          <input type="text" id="iAmount" inputmode="decimal" placeholder="0,00">
+        </div>
+        <div class="form-group">
+          <label id="lInvCurrency">Валута</label>
+          <input type="text" id="iCurrency" value="MKD" maxlength="8">
+        </div>
+        <div class="form-group">
+          <label id="lInvAccount">Сметка</label>
+          <input type="text" id="iAccount" placeholder="903">
+        </div>
+      </div>
+      <div class="form-group">
+        <label id="lInvStatus">Статус</label>
+        <select id="iStatus">
+          <option value="pending" id="optIPending">Неплатена</option>
+          <option value="paid" id="optIPaid">Платена</option>
+          <option value="cancelled" id="optICancelled">Откажана</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label id="lInvNotes">Забелешка</label>
+        <input type="text" id="iNotes">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeInvoiceModal()" id="btnInvoiceCancel">Откажи</button>
+      <button class="btn btn-primary" onclick="saveInvoice()" id="btnInvoiceSave">Зачувај</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="partnersOverlay">
   <div class="modal wide">
     <div class="modal-header">
@@ -651,32 +794,8 @@
   </div>
 </div>
 
-<div class="modal-overlay" id="passwordOverlay">
-  <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title" id="passwordTitle">Промена на лозинка</span>
-      <button class="modal-close" onclick="closePasswordModal()" aria-label="Close">×</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-error" id="passwordError"></div>
-      <div class="form-group">
-        <label id="lCurrentPass">Тековна лозинка</label>
-        <input type="password" id="currentPassword" autocomplete="current-password">
-      </div>
-      <div class="form-group">
-        <label id="lNewPass">Нова лозинка</label>
-        <input type="password" id="newPassword" autocomplete="new-password">
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closePasswordModal()" id="btnPasswordCancel">Откажи</button>
-      <button class="btn btn-primary" onclick="savePassword()" id="btnPasswordSave">Зачувај</button>
-    </div>
-  </div>
-</div>
-
 <div class="modal-overlay" id="usersOverlay">
-  <div class="modal">
+  <div class="modal wide">
     <div class="modal-header">
       <span class="modal-title" id="usersTitle">Управување со корисници</span>
       <button class="modal-close" onclick="closeUsersModal()" aria-label="Close">×</button>
@@ -691,6 +810,7 @@
         <div class="form-group">
           <label id="lUPassword">Лозинка</label>
           <input type="password" id="uPassword" autocomplete="new-password">
+          <span class="hint hidden" id="uPasswordHint">Празно ја остава старата лозинка.</span>
         </div>
         <div class="form-group">
           <label id="lURole">Улога</label>
@@ -701,7 +821,8 @@
         </div>
       </div>
       <div>
-        <button class="btn btn-primary btn-sm" onclick="addUser()" id="btnAddUser">Додади корисник</button>
+        <button class="btn btn-primary btn-sm" onclick="saveUser()" id="btnAddUser">Додади корисник</button>
+        <button class="btn btn-secondary btn-sm hidden" onclick="resetUserForm()" id="btnUserClear">Нов</button>
       </div>
       <table class="users-table">
         <thead>
@@ -770,24 +891,42 @@ const S = {
     partnersTitle: 'Партнери',
     partnerName: 'Назив',
     partnerRequired: 'Називот е задолжителен.',
-    confirmDelPartner: 'Да се избрише овој партнер? Пратките остануваат.',
+    confirmDelPartner: 'Да се избрише овој партнер? Пратките и фактурите остануваат.',
     newPartner: 'Нов',
     savePartner: 'Зачувај',
-    invLead: 'Книга за примени фактури. Записите доаѓаат во следниот чекор.',
-    inv1: 'Внатрешен број 05-1, 05-2… се ресетира секоја година.',
-    inv2: 'Датум на прием е денес, и може да се смени.',
-    inv3: 'Добавувач, даночен број, број на фактура, износ и сметка.',
-    invNote: 'Модулот е поврзан. Внес на фактури е следен чекор.',
-    passwordTitle: 'Промена на лозинка',
-    currentPass: 'Тековна лозинка',
-    newPass: 'Нова лозинка',
+    invSearchPh: 'Добавувач, број, сметка, даночен број...',
+    invTable: 'Табела',
+    invGroup: 'По добавувач',
+    addInvoice: 'Додади фактура',
+    editInvoice: 'Уреди фактура',
+    invInternal: 'Внатрешен број',
+    invNumber: 'Број на фактура',
+    invDate: 'Датум на фактура',
+    invReceived: 'Датум на прием',
+    invDue: 'Рок на плаќање',
+    invSupplier: 'Назив',
+    invAmount: 'Износ',
+    invCurrency: 'Валута',
+    invAccount: 'Сметка',
+    invStatus: 'Статус',
+    allStatuses: 'Сите статуси',
+    statusPending: 'Неплатена',
+    statusPaid: 'Платена',
+    statusCancelled: 'Откажана',
+    invPartnerHint: 'Изборот ги пополнува називот и даночниот број. Може да се поправат.',
+    invNumberHint: '05-1, 05-2… се ресетира секоја година.',
+    invResults: n => `${n} ${n === 1 ? 'фактура' : 'фактури'}`,
+    noInvoices: 'Нема фактури.',
+    invoicesWord: 'фактури',
+    confirmDelInvoice: 'Дали сте сигурни дека сакате да ја избришете оваа фактура?',
+    invoiceRequired: 'Пополнете датум на прием, внатрешен број и назив.',
     cancel: 'Откажи',
     save: 'Зачувај',
-    passwordRequired: 'Внесете тековна и нова лозинка.',
-    passwordWrong: 'Тековната лозинка не е точна.',
-    passwordSaved: 'Лозинката е променета.',
     usersTitle: 'Управување со корисници',
     addUser: 'Додади корисник',
+    saveUser: 'Зачувај',
+    editUser: 'Уреди',
+    passwordKeep: 'Празно ја остава старата лозинка.',
     uUsername: 'Корисник',
     uPassword: 'Лозинка',
     uRole: 'Улога',
@@ -795,6 +934,7 @@ const S = {
     roleUser: 'Корисник',
     confirmDelUser: 'Дали сте сигурни дека сакате да го избришете овој корисник?',
     userRequired: 'Корисник и лозинка се задолжителни.',
+    usernameRequired: 'Корисничкото име е задолжително.',
     roleLabel: { admin: 'Администратор', user: 'Корисник' },
     titles: { home: 'Office Log', postal: 'Книга за пошта', invoices: 'Влезни фактури' },
     icons: { home: '⌂', postal: '✉', invoices: '☰' }
@@ -850,24 +990,42 @@ const S = {
     partnersTitle: 'Partners',
     partnerName: 'Name',
     partnerRequired: 'Name is required.',
-    confirmDelPartner: 'Delete this partner? Existing packages stay.',
+    confirmDelPartner: 'Delete this partner? Existing packages and invoices stay.',
     newPartner: 'New',
     savePartner: 'Save',
-    invLead: 'Book of received invoices. Entries come in the next step.',
-    inv1: 'Internal number 05-1, 05-2… resets every year.',
-    inv2: 'Received date starts as today, and can be changed.',
-    inv3: 'Supplier, tax number, invoice number, amount, and account.',
-    invNote: 'The module is wired up. Invoice entry is the next step.',
-    passwordTitle: 'Change password',
-    currentPass: 'Current password',
-    newPass: 'New password',
+    invSearchPh: 'Supplier, number, account, tax number...',
+    invTable: 'Table',
+    invGroup: 'By supplier',
+    addInvoice: 'Add invoice',
+    editInvoice: 'Edit invoice',
+    invInternal: 'Internal no.',
+    invNumber: 'Invoice no.',
+    invDate: 'Invoice date',
+    invReceived: 'Received date',
+    invDue: 'Due date',
+    invSupplier: 'Name',
+    invAmount: 'Amount',
+    invCurrency: 'Currency',
+    invAccount: 'Account',
+    invStatus: 'Status',
+    allStatuses: 'All statuses',
+    statusPending: 'Pending',
+    statusPaid: 'Paid',
+    statusCancelled: 'Cancelled',
+    invPartnerHint: 'Choosing a partner fills the name and tax number. You can still edit them.',
+    invNumberHint: '05-1, 05-2… resets every year.',
+    invResults: n => `${n} ${n === 1 ? 'invoice' : 'invoices'}`,
+    noInvoices: 'No invoices found.',
+    invoicesWord: 'invoices',
+    confirmDelInvoice: 'Delete this invoice?',
+    invoiceRequired: 'Fill in received date, internal number, and name.',
     cancel: 'Cancel',
     save: 'Save',
-    passwordRequired: 'Enter the current and new password.',
-    passwordWrong: 'Current password is incorrect.',
-    passwordSaved: 'Password changed.',
     usersTitle: 'User management',
     addUser: 'Add user',
+    saveUser: 'Save',
+    editUser: 'Edit',
+    passwordKeep: 'Leave blank to keep the current password.',
     uUsername: 'Username',
     uPassword: 'Password',
     uRole: 'Role',
@@ -875,6 +1033,7 @@ const S = {
     roleUser: 'User',
     confirmDelUser: 'Are you sure you want to delete this user?',
     userRequired: 'Username and password are required.',
+    usernameRequired: 'Username is required.',
     roleLabel: { admin: 'Admin', user: 'User' },
     titles: { home: 'Office Log', postal: 'Postal Log', invoices: 'Incoming Invoices' },
     icons: { home: '⌂', postal: '✉', invoices: '☰' }
@@ -900,12 +1059,20 @@ let lang = localStorage.getItem('lang') || 'mk';
 let theme = localStorage.getItem('theme') || 'light';
 let view = sessionStorage.getItem('view') || 'home';
 let postalView = localStorage.getItem('postalView') || 'table';
+let invoiceView = localStorage.getItem('invoiceView') || 'table';
 let currentUser = null;
 let packages = [];
+let invoices = [];
 let partners = [];
 let currentEdit = null;
+let currentInvoice = null;
 let currentPartner = null;
+let currentEditUser = null;
+let userList = [];
 let searchTimer = null;
+let invoiceSearchTimer = null;
+let iInternalTouched = false;
+let iSuggested = '';
 
 const t = key => S[lang][key];
 
@@ -947,7 +1114,6 @@ function applyLang() {
   document.getElementById('lblBack').textContent = s.back;
   document.getElementById('lblPartners').textContent = s.partners;
   document.getElementById('lblUsers').textContent = s.users;
-  document.getElementById('lblPassword').textContent = s.password;
   document.getElementById('lblLogout').textContent = s.logout;
   document.getElementById('lblSearch').textContent = s.search;
   document.getElementById('searchInput').placeholder = s.searchPh;
@@ -958,7 +1124,6 @@ function applyLang() {
   document.getElementById('lblTable').textContent = s.table;
   document.getElementById('lblGroup').textContent = s.group;
   document.getElementById('btnAdd').textContent = s.add;
-  document.getElementById('btnCSV').textContent = s.exportCSV;
   document.getElementById('btnXLSX').textContent = s.exportXLSX;
   document.getElementById('lPartner').textContent = s.partner;
   document.getElementById('partnerHint').textContent = s.partnerHint;
@@ -992,24 +1157,50 @@ function applyLang() {
   document.getElementById('cardInvMk').textContent = s.invMk;
   document.getElementById('cardInvDesc').textContent = s.invDesc;
   document.getElementById('cardInvGo').textContent = s.open;
-  document.getElementById('invTitle').textContent = s.titles.invoices;
-  document.getElementById('invLead').textContent = s.invLead;
-  document.getElementById('invItem1').textContent = s.inv1;
-  document.getElementById('invItem2').textContent = s.inv2;
-  document.getElementById('invItem3').textContent = s.inv3;
-  document.getElementById('invNote').textContent = s.invNote;
-  document.getElementById('passwordTitle').textContent = s.passwordTitle;
-  document.getElementById('lCurrentPass').textContent = s.currentPass;
-  document.getElementById('lNewPass').textContent = s.newPass;
-  document.getElementById('btnPasswordCancel').textContent = s.cancel;
-  document.getElementById('btnPasswordSave').textContent = s.save;
+  document.getElementById('lblInvSearch').textContent = s.search;
+  document.getElementById('invSearchInput').placeholder = s.invSearchPh;
+  document.getElementById('lblInvYear').textContent = s.year;
+  document.getElementById('optInvAllYears').textContent = s.allYears;
+  document.getElementById('lblInvStatus').textContent = s.invStatus;
+  document.getElementById('optInvAllStatus').textContent = s.allStatuses;
+  document.getElementById('optStatusPending').textContent = s.statusPending;
+  document.getElementById('optStatusPaid').textContent = s.statusPaid;
+  document.getElementById('optStatusCancelled').textContent = s.statusCancelled;
+  document.getElementById('lblInvDateFrom').textContent = s.dateFrom;
+  document.getElementById('lblInvDateTo').textContent = s.dateTo;
+  document.getElementById('lblInvTable').textContent = s.invTable;
+  document.getElementById('lblInvGroup').textContent = s.invGroup;
+  document.getElementById('btnAddInvoice').textContent = s.addInvoice;
+  document.getElementById('btnInvXLSX').textContent = s.exportXLSX;
+  document.getElementById('lInvPartner').textContent = s.partner;
+  document.getElementById('invPartnerHint').textContent = s.invPartnerHint;
+  document.getElementById('lInvReceived').innerHTML = s.invReceived + ' <span class="required-star">*</span>';
+  document.getElementById('lInvInternal').innerHTML = s.invInternal + ' <span class="required-star">*</span>';
+  document.getElementById('invNumberHint').textContent = s.invNumberHint;
+  document.getElementById('lInvSupplier').innerHTML = s.invSupplier + ' <span class="required-star">*</span>';
+  document.getElementById('lInvNumber').textContent = s.invNumber;
+  document.getElementById('lInvTax').textContent = s.tax;
+  document.getElementById('lInvDate').textContent = s.invDate;
+  document.getElementById('lInvDue').textContent = s.invDue;
+  document.getElementById('lInvAmount').textContent = s.invAmount;
+  document.getElementById('lInvCurrency').textContent = s.invCurrency;
+  document.getElementById('lInvAccount').textContent = s.invAccount;
+  document.getElementById('lInvStatus').textContent = s.invStatus;
+  document.getElementById('optIPending').textContent = s.statusPending;
+  document.getElementById('optIPaid').textContent = s.statusPaid;
+  document.getElementById('optICancelled').textContent = s.statusCancelled;
+  document.getElementById('lInvNotes').textContent = s.notes;
+  document.getElementById('btnInvoiceCancel').textContent = s.cancel;
+  document.getElementById('btnInvoiceSave').textContent = s.save;
   document.getElementById('usersTitle').textContent = s.usersTitle;
+  document.getElementById('uPasswordHint').textContent = s.passwordKeep;
+  document.getElementById('btnUserClear').textContent = s.newPartner;
   document.getElementById('lUUsername').textContent = s.uUsername;
   document.getElementById('lUPassword').textContent = s.uPassword;
   document.getElementById('lURole').textContent = s.uRole;
   document.getElementById('optRoleUser').textContent = s.roleUser;
   document.getElementById('optRoleAdmin').textContent = s.roleAdmin;
-  document.getElementById('btnAddUser').textContent = s.addUser;
+  document.getElementById('btnAddUser').textContent = currentEditUser ? s.saveUser : s.addUser;
   document.getElementById('thUser').textContent = s.uUsername;
   document.getElementById('thRole').textContent = s.uRole;
   if (currentUser) {
@@ -1017,6 +1208,8 @@ function applyLang() {
   }
   applyViewChrome();
   if (currentUser && view === 'postal') renderPostal();
+  if (currentUser && view === 'invoices') renderInvoices();
+  if (document.getElementById('usersOverlay').classList.contains('open')) loadUsersTable();
 }
 
 function applyViewChrome() {
@@ -1034,14 +1227,15 @@ function showView(name) {
   document.getElementById('viewHome').classList.toggle('hidden', name !== 'home');
   document.getElementById('viewPostal').classList.toggle('hidden', name !== 'postal');
   document.getElementById('viewInvoices').classList.toggle('hidden', name !== 'invoices');
-  document.querySelector('.main').classList.toggle('wide', name === 'postal');
+  document.querySelector('.main').classList.toggle('wide', name === 'postal' || name === 'invoices');
   applyViewChrome();
   if (currentUser && name === 'postal') loadPostal();
+  if (currentUser && name === 'invoices') loadInvoices();
 }
 
 function showLogin() {
   document.getElementById('loginScreen').style.display = 'flex';
-  ['userBadge', 'btnLogout', 'btnUsers', 'btnPartners', 'btnPassword', 'btnBack'].forEach(id => {
+  ['userBadge', 'btnLogout', 'btnUsers', 'btnPartners', 'btnBack'].forEach(id => {
     document.getElementById(id).classList.add('hidden');
   });
   setTimeout(() => document.getElementById('loginUsername').focus(), 50);
@@ -1059,7 +1253,6 @@ function showApp() {
   pill.textContent = t('roleLabel')[currentUser.role] || currentUser.role;
   pill.className = 'role-pill ' + currentUser.role;
   document.getElementById('btnLogout').classList.remove('hidden');
-  document.getElementById('btnPassword').classList.remove('hidden');
   document.getElementById('btnPartners').classList.remove('hidden');
   document.getElementById('btnUsers').classList.toggle('hidden', !isAdmin);
   if (!['home', 'postal', 'invoices'].includes(view)) view = 'home';
@@ -1107,99 +1300,109 @@ async function doLogout() {
   showLogin();
 }
 
-function openPasswordModal() {
-  document.getElementById('currentPassword').value = '';
-  document.getElementById('newPassword').value = '';
-  document.getElementById('passwordError').style.display = 'none';
-  document.getElementById('passwordOverlay').classList.add('open');
-  setTimeout(() => document.getElementById('currentPassword').focus(), 40);
-}
-
-function closePasswordModal() {
-  document.getElementById('passwordOverlay').classList.remove('open');
-}
-
-async function savePassword() {
-  const current_password = document.getElementById('currentPassword').value;
-  const password = document.getElementById('newPassword').value.trim();
-  const errEl = document.getElementById('passwordError');
-  errEl.style.display = 'none';
-  if (!current_password || !password) {
-    errEl.textContent = t('passwordRequired');
-    errEl.style.display = 'block';
-    return;
-  }
-  const res = await fetch('/api/me/password', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ current_password, password })
-  });
-  if (res.ok) {
-    closePasswordModal();
-    return;
-  }
-  errEl.textContent = t('passwordWrong');
-  errEl.style.display = 'block';
+function resetUserForm() {
+  currentEditUser = null;
+  document.getElementById('uUsername').value = '';
+  document.getElementById('uPassword').value = '';
+  document.getElementById('uRole').value = 'user';
+  document.getElementById('userFormError').style.display = 'none';
+  document.getElementById('btnAddUser').textContent = t('addUser');
+  document.getElementById('uPasswordHint').classList.add('hidden');
+  document.getElementById('btnUserClear').classList.add('hidden');
 }
 
 function openUsersModal() {
+  resetUserForm();
   document.getElementById('usersOverlay').classList.add('open');
-  document.getElementById('userFormError').style.display = 'none';
   loadUsersTable();
 }
 
 function closeUsersModal() {
   document.getElementById('usersOverlay').classList.remove('open');
-  document.getElementById('uUsername').value = '';
-  document.getElementById('uPassword').value = '';
-  document.getElementById('uRole').value = 'user';
+  resetUserForm();
 }
 
 async function loadUsersTable() {
   const res = await fetch('/api/users');
   if (!res.ok) return;
-  const users = await res.json();
+  userList = await res.json();
   const s = S[lang];
-  document.getElementById('usersTableBody').innerHTML = users.map(u => `
+  document.getElementById('usersTableBody').innerHTML = userList.map(u => `
     <tr>
       <td>${esc(u.username)}</td>
       <td><span class="role-pill ${esc(u.role)}">${esc(s.roleLabel[u.role] || u.role)}</span></td>
-      <td>${u.id !== currentUser.id
-        ? `<button class="btn btn-danger-ghost btn-sm" onclick="deleteUser(${u.id})">✕</button>`
-        : ''}</td>
+      <td class="actions-cell">
+        <button class="btn btn-ghost btn-sm" onclick="editUser(${u.id})">✎</button>
+        ${u.id !== currentUser.id
+          ? `<button class="btn btn-danger-ghost btn-sm" onclick="deleteUser(${u.id})">✕</button>`
+          : ''}
+      </td>
     </tr>`).join('') || '<tr><td colspan="3">—</td></tr>';
 }
 
-async function addUser() {
+function editUser(id) {
+  const user = userList.find(u => u.id === id);
+  if (!user) return;
+  currentEditUser = id;
+  document.getElementById('uUsername').value = user.username;
+  document.getElementById('uPassword').value = '';
+  document.getElementById('uRole').value = user.role;
+  document.getElementById('userFormError').style.display = 'none';
+  document.getElementById('btnAddUser').textContent = t('saveUser');
+  document.getElementById('uPasswordHint').classList.remove('hidden');
+  document.getElementById('btnUserClear').classList.remove('hidden');
+  document.getElementById('uUsername').focus();
+}
+
+function applyCurrentUser(user) {
+  currentUser.username = user.username;
+  currentUser.role = user.role;
+  document.getElementById('userNameDisplay').textContent = user.username;
+  const pill = document.getElementById('userRolePill');
+  pill.textContent = t('roleLabel')[user.role] || user.role;
+  pill.className = 'role-pill ' + user.role;
+  document.getElementById('btnUsers').classList.toggle('hidden', user.role !== 'admin');
+}
+
+async function saveUser() {
   const username = document.getElementById('uUsername').value.trim();
   const password = document.getElementById('uPassword').value.trim();
   const role = document.getElementById('uRole').value;
   const errEl = document.getElementById('userFormError');
   errEl.style.display = 'none';
-  if (!username || !password) {
-    errEl.textContent = t('userRequired');
+  if (!username || (!currentEditUser && !password)) {
+    errEl.textContent = currentEditUser ? t('usernameRequired') : t('userRequired');
     errEl.style.display = 'block';
     return;
   }
-  const res = await fetch('/api/users', {
-    method: 'POST',
+  const url = currentEditUser ? '/api/users/' + currentEditUser : '/api/users';
+  const res = await fetch(url, {
+    method: currentEditUser ? 'PUT' : 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password, role })
   });
-  if (res.ok) {
-    document.getElementById('uUsername').value = '';
-    document.getElementById('uPassword').value = '';
-    await loadUsersTable();
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    errEl.textContent = data.error || 'Error';
+    errEl.style.display = 'block';
     return;
   }
-  const data = await res.json().catch(() => ({}));
-  errEl.textContent = data.error || 'Error';
-  errEl.style.display = 'block';
+  if (currentEditUser === currentUser.id) applyCurrentUser(data);
+  resetUserForm();
+  await loadUsersTable();
 }
 
 async function deleteUser(id) {
   if (!confirm(t('confirmDelUser'))) return;
-  await fetch('/api/users/' + id, { method: 'DELETE' });
+  const res = await fetch('/api/users/' + id, { method: 'DELETE' });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    const errEl = document.getElementById('userFormError');
+    errEl.textContent = data.error || 'Error';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (currentEditUser === id) resetUserForm();
   await loadUsersTable();
 }
 
@@ -1577,21 +1780,329 @@ async function deletePartner(id) {
   renderPartners();
 }
 
-['passwordOverlay', 'usersOverlay', 'packageOverlay', 'partnersOverlay'].forEach(id => {
+function statusLabel(status) {
+  const s = S[lang];
+  if (status === 'paid') return s.statusPaid;
+  if (status === 'cancelled') return s.statusCancelled;
+  return s.statusPending;
+}
+
+function fmtAmount(value) {
+  if (value == null || value === '') return '';
+  const n = Number(value);
+  if (Number.isNaN(n)) return String(value);
+  return n.toLocaleString(lang === 'mk' ? 'mk-MK' : 'en-GB', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function invoiceParams() {
+  const p = new URLSearchParams();
+  const search = document.getElementById('invSearchInput').value.trim();
+  const year = document.getElementById('invYearSelect').value;
+  const status = document.getElementById('invStatus').value;
+  const from = document.getElementById('invDateFrom').value;
+  const to = document.getElementById('invDateTo').value;
+  if (search) p.set('search', search);
+  if (year) p.set('year', year);
+  if (status) p.set('status', status);
+  if (from) p.set('date_from', from);
+  if (to) p.set('date_to', to);
+  return p;
+}
+
+function onInvoiceSearch() {
+  clearTimeout(invoiceSearchTimer);
+  invoiceSearchTimer = setTimeout(loadInvoices, 280);
+}
+
+function setInvoiceView(next) {
+  invoiceView = next;
+  localStorage.setItem('invoiceView', next);
+  document.getElementById('invViewTableBtn').classList.toggle('active', next === 'table');
+  document.getElementById('invViewGroupBtn').classList.toggle('active', next === 'group');
+  renderInvoices();
+}
+
+async function loadInvoices() {
+  const [listRes, yearRes] = await Promise.all([
+    fetch('/api/invoices?' + invoiceParams()),
+    fetch('/api/invoices/years')
+  ]);
+  if (!listRes.ok) return;
+  invoices = await listRes.json();
+  if (yearRes.ok) {
+    const years = await yearRes.json();
+    const sel = document.getElementById('invYearSelect');
+    const cur = sel.value;
+    while (sel.options.length > 1) sel.remove(1);
+    years.forEach(y => {
+      const o = document.createElement('option');
+      o.value = y;
+      o.textContent = y;
+      sel.appendChild(o);
+    });
+    if (cur) sel.value = cur;
+  }
+  renderInvoices();
+}
+
+function invoiceActionButtons(id) {
+  if (currentUser?.role !== 'admin') return '';
+  return `<div class="actions-cell">
+    <button class="btn btn-ghost btn-sm" onclick="openInvoiceModal(${id})">✎</button>
+    <button class="btn btn-danger-ghost btn-sm" onclick="deleteInvoice(${id})">✕</button>
+  </div>`;
+}
+
+function renderInvoices() {
+  document.getElementById('invResultsCount').textContent = t('invResults')(invoices.length);
+  document.getElementById('invViewTableBtn').classList.toggle('active', invoiceView === 'table');
+  document.getElementById('invViewGroupBtn').classList.toggle('active', invoiceView === 'group');
+  invoiceView === 'table' ? renderInvoiceTable() : renderInvoiceGroup();
+}
+
+function invoiceStatusCell(status) {
+  const known = status === 'paid' || status === 'cancelled' ? status : 'pending';
+  return `<span class="status-badge status-${known}">${esc(statusLabel(known))}</span>`;
+}
+
+function renderInvoiceTable() {
+  const s = S[lang];
+  const el = document.getElementById('invoiceContent');
+  if (!invoices.length) {
+    el.innerHTML = `<div class="table-wrap"><div class="empty-state">${esc(s.noInvoices)}</div></div>`;
+    return;
+  }
+  const rows = invoices.map((inv, i) => `
+    <tr>
+      <td class="num">${i + 1}</td>
+      <td class="ref-cell">${esc(inv.internal_number)}</td>
+      <td>${esc(inv.invoice_number)}</td>
+      <td class="date-cell col-inv-extra">${esc(fmtDate(inv.invoice_date))}</td>
+      <td><strong>${esc(inv.supplier_name)}</strong></td>
+      <td>${esc(inv.tax_number)}</td>
+      <td class="amount">${esc(fmtAmount(inv.amount))}</td>
+      <td>${esc(inv.bank_account)}</td>
+      <td class="date-cell">${esc(fmtDate(inv.received_date))}</td>
+      <td>${invoiceStatusCell(inv.payment_status)}</td>
+      <td>${invoiceActionButtons(inv.id)}</td>
+    </tr>`).join('');
+  el.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr>
+      <th>#</th><th>${esc(s.invInternal)}</th><th>${esc(s.invNumber)}</th>
+      <th class="col-inv-extra">${esc(s.invDate)}</th><th>${esc(s.invSupplier)}</th>
+      <th>${esc(s.tax)}</th><th>${esc(s.invAmount)}</th><th>${esc(s.invAccount)}</th>
+      <th>${esc(s.invReceived)}</th><th>${esc(s.invStatus)}</th><th></th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function renderInvoiceGroup() {
+  const s = S[lang];
+  const el = document.getElementById('invoiceContent');
+  if (!invoices.length) {
+    el.innerHTML = `<div class="table-wrap"><div class="empty-state">${esc(s.noInvoices)}</div></div>`;
+    return;
+  }
+  const map = {};
+  invoices.forEach(inv => {
+    const key = inv.supplier_name || '—';
+    if (!map[key]) map[key] = [];
+    map[key].push(inv);
+  });
+  const cards = Object.keys(map).sort((a, b) => a.localeCompare(b)).map(name => {
+    const list = map[name];
+    const initials = name.split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
+    const tax = list.find(inv => inv.tax_number)?.tax_number || '';
+    const rows = list.map(inv => `
+      <tr>
+        <td class="date-cell">${esc(fmtDate(inv.received_date))}</td>
+        <td class="ref-cell">${esc(inv.internal_number)}</td>
+        <td>${esc(inv.invoice_number)}</td>
+        <td class="amount">${esc(fmtAmount(inv.amount))}</td>
+        <td>${esc(inv.bank_account)}</td>
+        <td>${invoiceStatusCell(inv.payment_status)}</td>
+        <td>${invoiceActionButtons(inv.id)}</td>
+      </tr>`).join('');
+    return `<div class="group-card">
+      <div class="group-header" onclick="this.parentElement.classList.toggle('open')">
+        <div class="group-avatar">${esc(initials)}</div>
+        <div class="group-info">
+          <div class="group-name">${esc(name)}</div>
+          <div class="group-meta">${tax ? esc(s.tax) + ': ' + esc(tax) : ''}</div>
+        </div>
+        <span class="group-count">${list.length} ${esc(s.invoicesWord)}</span>
+        <span class="group-chevron">▼</span>
+      </div>
+      <div class="group-body"><table>
+        <thead><tr>
+          <th>${esc(s.invReceived)}</th><th>${esc(s.invInternal)}</th><th>${esc(s.invNumber)}</th>
+          <th>${esc(s.invAmount)}</th><th>${esc(s.invAccount)}</th><th>${esc(s.invStatus)}</th><th></th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div>`;
+  }).join('');
+  el.innerHTML = `<div class="group-list">${cards}</div>`;
+}
+
+function fillInvoicePartnerSelect(selected) {
+  const sel = document.getElementById('iPartner');
+  sel.innerHTML = `<option value="">${esc(t('noPartner'))}</option>` +
+    partners.map(p => `<option value="${p.id}">${esc(p.name)}${p.tax_number ? ' · ' + esc(p.tax_number) : ''}</option>`).join('');
+  sel.value = selected || '';
+}
+
+function applyInvoicePartner() {
+  const id = Number(document.getElementById('iPartner').value);
+  const partner = partners.find(p => p.id === id);
+  if (!partner) return;
+  document.getElementById('iSupplier').value = partner.name || '';
+  document.getElementById('iTax').value = partner.tax_number || '';
+}
+
+async function suggestInvoiceNumber(receivedDate) {
+  const p = new URLSearchParams();
+  if (receivedDate) p.set('received_date', receivedDate);
+  const res = await fetch('/api/invoices/next?' + p);
+  if (!res.ok) return '';
+  const data = await res.json();
+  return data.internal_number || '';
+}
+
+async function onInvoiceReceivedChange() {
+  if (currentInvoice || iInternalTouched) return;
+  const received = document.getElementById('iReceived').value;
+  if (!received) return;
+  const next = await suggestInvoiceNumber(received);
+  const field = document.getElementById('iInternal');
+  if (!iInternalTouched && (!field.value || field.value === iSuggested)) {
+    field.value = next;
+    iSuggested = next;
+  }
+}
+
+function setDatePair(dateId, txtId, iso) {
+  document.getElementById(dateId).value = iso || '';
+  document.getElementById(txtId).value = fmtDate(iso);
+}
+
+async function openInvoiceModal(id = null) {
+  currentInvoice = id;
+  iInternalTouched = !!id;
+  iSuggested = '';
+  document.getElementById('invoiceError').style.display = 'none';
+  document.getElementById('invoiceTitle').textContent = id ? t('editInvoice') : t('addInvoice');
+  await loadPartners();
+  if (id) {
+    const inv = invoices.find(x => x.id === id);
+    fillInvoicePartnerSelect(inv?.partner_id || '');
+    setDatePair('iReceived', 'iReceivedTxt', inv?.received_date);
+    document.getElementById('iInternal').value = inv?.internal_number || '';
+    document.getElementById('iSupplier').value = inv?.supplier_name || '';
+    document.getElementById('iNumber').value = inv?.invoice_number || '';
+    document.getElementById('iTax').value = inv?.tax_number || '';
+    setDatePair('iInvoiceDate', 'iInvoiceDateTxt', inv?.invoice_date);
+    setDatePair('iDue', 'iDueTxt', inv?.due_date);
+    document.getElementById('iAmount').value = inv?.amount == null ? '' : String(inv.amount).replace('.', ',');
+    document.getElementById('iCurrency').value = inv?.currency || 'MKD';
+    document.getElementById('iAccount').value = inv?.bank_account || '';
+    document.getElementById('iStatus').value = inv?.payment_status || 'pending';
+    document.getElementById('iNotes').value = inv?.notes || '';
+  } else {
+    const today = new Date().toISOString().slice(0, 10);
+    fillInvoicePartnerSelect('');
+    setDatePair('iReceived', 'iReceivedTxt', today);
+    document.getElementById('iInternal').value = await suggestInvoiceNumber(today);
+    iSuggested = document.getElementById('iInternal').value;
+    ['iSupplier', 'iNumber', 'iTax', 'iAccount', 'iNotes'].forEach(field => {
+      document.getElementById(field).value = '';
+    });
+    setDatePair('iInvoiceDate', 'iInvoiceDateTxt', '');
+    setDatePair('iDue', 'iDueTxt', '');
+    document.getElementById('iAmount').value = '';
+    document.getElementById('iCurrency').value = 'MKD';
+    document.getElementById('iStatus').value = 'pending';
+  }
+  document.getElementById('invoiceOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('iNumber').focus(), 40);
+}
+
+function closeInvoiceModal() {
+  document.getElementById('invoiceOverlay').classList.remove('open');
+  currentInvoice = null;
+  iInternalTouched = false;
+}
+
+async function saveInvoice() {
+  const data = {
+    received_date: document.getElementById('iReceived').value,
+    internal_number: document.getElementById('iInternal').value.trim(),
+    partner_id: document.getElementById('iPartner').value || null,
+    supplier_name: document.getElementById('iSupplier').value.trim(),
+    invoice_number: document.getElementById('iNumber').value.trim(),
+    tax_number: document.getElementById('iTax').value.trim(),
+    invoice_date: document.getElementById('iInvoiceDate').value,
+    due_date: document.getElementById('iDue').value,
+    amount: document.getElementById('iAmount').value.trim(),
+    currency: document.getElementById('iCurrency').value.trim() || 'MKD',
+    bank_account: document.getElementById('iAccount').value.trim(),
+    payment_status: document.getElementById('iStatus').value,
+    notes: document.getElementById('iNotes').value.trim()
+  };
+  const errEl = document.getElementById('invoiceError');
+  errEl.style.display = 'none';
+  if (!data.received_date || !data.internal_number || !data.supplier_name) {
+    errEl.textContent = t('invoiceRequired');
+    errEl.style.display = 'block';
+    return;
+  }
+  const url = currentInvoice ? '/api/invoices/' + currentInvoice : '/api/invoices';
+  const res = await fetch(url, {
+    method: currentInvoice ? 'PUT' : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    errEl.textContent = body.error || 'Error';
+    errEl.style.display = 'block';
+    return;
+  }
+  closeInvoiceModal();
+  await loadInvoices();
+}
+
+async function deleteInvoice(id) {
+  if (!confirm(t('confirmDelInvoice'))) return;
+  await fetch('/api/invoices/' + id, { method: 'DELETE' });
+  await loadInvoices();
+}
+
+function exportInvoices(fmt) {
+  const p = invoiceParams();
+  p.set('format', fmt);
+  window.location.href = '/api/invoices/export?' + p;
+}
+
+['usersOverlay', 'packageOverlay', 'partnersOverlay', 'invoiceOverlay'].forEach(id => {
   document.getElementById(id).addEventListener('click', e => {
     if (e.target !== e.currentTarget) return;
-    if (id === 'passwordOverlay') closePasswordModal();
     if (id === 'usersOverlay') closeUsersModal();
     if (id === 'packageOverlay') closePackageModal();
     if (id === 'partnersOverlay') closePartnersModal();
+    if (id === 'invoiceOverlay') closeInvoiceModal();
   });
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    closePasswordModal();
     closeUsersModal();
     closePackageModal();
     closePartnersModal();
+    closeInvoiceModal();
   }
 });
 

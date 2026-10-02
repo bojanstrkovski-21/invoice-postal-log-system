@@ -36,16 +36,16 @@ Windows: double-click `office-log-system/start.bat`, then open http://localhost:
 First login: `admin` / `admin123`. Stop the old postal app first. It uses the same port.
 
 ## Current State
-Phase 1 and Phase 2 are done. Login, landing page, partners, and the postal log work, including даночен број. The invoice book has a database table and a placeholder screen only.
+Phase 1, Phase 2, and Phase 3 are done. Login, landing page, partners, the postal log, and the incoming invoice book work, including даночен број.
 
 GitHub: https://github.com/bojanstrkovski-21/invoice-postal-log-system (`main`). `office.db` and the MIT license are in the repo.
 
 ## Next Steps
-1. Phase 3 — invoice add/edit/delete
-2. Auto internal number `05-X`, reset each year
-3. Received date defaults to today
-4. Bank account, amount, payment status, tax number
-5. Invoice search, filters, and CSV/Excel export
+1. Phase 4 — consistent polish between the two books
+2. Confirm the yearly `05-X` reset with a real January entry
+3. Backup and restore notes
+4. Final testing on Windows
 
 ## Recent Work
 - 2026-10-02 — Foundation, postal module, tax number, project memory, and GitHub repo on `main`
+- 2026-10-02 — Phase 3 invoice book: add/edit/delete, yearly `05-X`, payment status, search, and CSV/Excel export

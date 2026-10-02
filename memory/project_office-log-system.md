@@ -19,9 +19,9 @@ One local web app, one login, two books. Replaces the paper invoice book and the
 - `app.py` — auth, users, shared partners API
 - `db.py` — schema and column migration
 - `auth.py` — `@login_required`, `@admin_required`
-- `postal/routes.py` — package CRUD, years, CSV/Excel export
-- `invoices/routes.py` — status only; invoice CRUD is not built yet
-- `static/index.html` — login, landing, both module shells, postal UI, partners modal
+- `postal/routes.py` — package CRUD, years, Excel export
+- `invoices/routes.py` — invoice CRUD, next `05-X`, years, Excel export
+- `static/index.html` — login, landing, postal UI, invoice UI, partners modal
 - `requirements.txt` — flask, openpyxl
 - `start.bat` — installs deps, starts the server, opens the browser after 10 seconds
 
@@ -31,32 +31,38 @@ One local web app, one login, two books. Replaces the paper invoice book and the
 
 **Packages:** id, ref_number, send_date, partner_id, recipient_name, recipient_address, city, tax_number, package_type, year, notes, created_at
 
-**Invoices (schema only):** id, internal_number, invoice_number, invoice_date, received_date, due_date, partner_id, tax_number, bank_account, amount, currency, payment_status, notes, year, created_at. Unique `(year, internal_number)`.
+**Invoices:** id, internal_number, invoice_number, invoice_date, received_date, due_date, partner_id, supplier_name, tax_number, bank_account, amount, currency, payment_status, notes, year, created_at. Unique `(year, internal_number)`.
 
 **Package types (stored in Macedonian):** обична, препорачана, препорачана со повратница, брза пошта, брза пошта препорачана со повратница
 
 **API:**
 - `POST /api/login`, `POST /api/logout`, `GET /api/me`, `PUT /api/me/password`
-- `GET/POST /api/users`, `DELETE /api/users/<id>`, `PUT /api/users/<id>/password`
+- `GET/POST /api/users`, `PUT/DELETE /api/users/<id>` — update changes username, role, and an optional password
 - `GET/POST /api/partners`, `PUT/DELETE /api/partners/<id>`
 - `GET/POST /api/postal/packages` — list supports `search`, `year`, `date_from`, `date_to`
 - `PUT/DELETE /api/postal/packages/<id>`
 - `GET /api/postal/years`
-- `GET /api/postal/export?format=csv|xlsx` — same filters as the list
-- `GET /api/invoices/status` — placeholder
+- `GET /api/postal/export?format=xlsx` — same filters as the list. The screen exports Excel only.
+- `GET /api/invoices` — list supports `search`, `year`, `status`, `date_from`, `date_to`
+- `POST /api/invoices`, `PUT/DELETE /api/invoices/<id>`
+- `GET /api/invoices/next?received_date=yyyy-mm-dd` — next `05-X` for that year
+- `GET /api/invoices/years`
+- `GET /api/invoices/export?format=xlsx` — same filters as the list. The screen exports Excel only.
+- `GET /api/invoices/status`
 
-**Roles:** `admin` can edit/delete packages, delete partners, and manage users. `user` can add packages and add/edit partners. Edit/delete buttons are hidden for `user`.
+**Roles:** `admin` can edit/delete packages and invoices, delete partners, and manage users from Корисници. That screen can rename a user, change the role, and set a password. A blank password keeps the old one. The last admin cannot be deleted or demoted. `user` can add packages and invoices, and add/edit partners. Edit/delete buttons are hidden for `user`. There is no password button in the navbar.
 
 **GitHub:** https://github.com/bojanstrkovski-21/invoice-postal-log-system — branch `main`. `office.db` is committed. MIT license is in the repo root.
 
-**Current status (2026-10-02):** Phase 1 and Phase 2 done. User tested login. Postal log is usable. Invoice entry is not built. No import from the old `pratki.db`. Repo is pushed.
+**Current status (2026-10-02):** Phase 1, Phase 2, and Phase 3 done. User tested login. Postal log and invoice entry are usable. No import from the old `pratki.db`. Repo was pushed before the invoice book.
 
 **Decisions:**
 - Даночен број is on partners, packages, and invoices. The user asked for it on both books.
 - Choosing a partner copies name, address, city, and tax number onto the package. Later partner edits do not rewrite old packages.
 - Postal `ref_number` stays manual and is required. Common prefixes: `03-`, `08-`, `01-`, `02-`, `04-`.
-- Invoice internal number will be `05-1`, `05-2`, … and resets each year. `received_date` starts as today. Not built yet.
-- Paper invoice book columns also include реден број, број, датум, назив на седиште, даночен број, износ, сметка, забелешка.
+- Invoice internal number is `05-1`, `05-2`, … and resets each year. The form suggests the next number from the received date. An empty number is filled on save. `received_date` starts as today and can be edited.
+- `supplier_name` and `tax_number` are snapshots. Choosing a partner copies them. Later partner edits do not rewrite old invoices.
+- Paper invoice book columns are реден број, број, датум, назив на седиште, даночен број, износ, сметка, забелешка. The app also stores due date, currency, and payment status.
 - Light theme is default (Dawnfox, `--bg: #b8cece`). Dark theme is Nightfox. Preference is in `localStorage`.
 - Dates display as `dd.mm.yyyy`. The database stores `yyyy-mm-dd`. Date fields are a text input with auto-inserted dots plus a calendar button. `lang="mk"` alone was not reliable.
 - Package types stay Macedonian even when the UI is English.
