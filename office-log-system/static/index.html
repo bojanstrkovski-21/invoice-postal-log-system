@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="mk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Office Log</title>
+  <style>
+    :root {
+      --primary: #719cd6;
+      --primary-hover: #8cb0e0;
+      --primary-light: #1e2d40;
+      --primary-text: #a3bce8;
+      --danger: #c94f6d;
+      --danger-hover: #d4607d;
+      --bg: #192330;
+      --card: #212e3f;
+      --card-alt: #1c2a39;
+      --hover-bg: #283d55;
+      --border: #2e3f55;
+      --text: #cdcecf;
+      --muted: #71839b;
+      --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+      --shadow-lg: 0 20px 40px rgba(0,0,0,0.5);
+    }
+
+    html[data-theme="light"] {
+      --primary: #286983;
+      --primary-hover: #1d5470;
+      --primary-light: #cfe4e8;
+      --primary-text: #1d5470;
+      --danger: #b4637a;
+      --danger-hover: #9a4f66;
+      --bg: #b8cece;
+      --card: #d2e8e8;
+      --card-alt: #c4dcdc;
+      --hover-bg: #a8bebe;
+      --border: #c9c3cb;
+      --text: #575279;
+      --muted: #9893a5;
+      --shadow: 0 1px 3px rgba(60,40,80,0.08), 0 1px 2px rgba(60,40,80,0.06);
+      --shadow-lg: 0 20px 40px rgba(60,40,80,0.15);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .header {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow);
+    }
+
+    .header-left, .header-actions { display: flex; align-items: center; gap: 8px; }
+    .header-left { gap: 10px; }
+
+    .header-icon {
+      width: 32px; height: 32px;
+      background: var(--primary);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 16px; flex-shrink: 0;
+    }
+
+    .header-title { font-size: 17px; font-weight: 700; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 8px 14px;
+      border-radius: 7px; border: none; cursor: pointer;
+      font-size: 13px; font-weight: 500;
+      transition: all 0.15s; white-space: nowrap;
+      font-family: inherit;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--hover-bg); }
+    .btn-ghost { background: transparent; color: var(--muted); padding: 6px 9px; }
+    .btn-ghost:hover { background: var(--hover-bg); color: var(--text); }
+    .btn-danger-ghost { background: transparent; color: var(--danger); padding: 6px 9px; }
+    .btn-danger-ghost:hover { background: rgba(201,79,109,0.15); }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+    .theme-btn {
+      background: none; border: 1px solid var(--border); border-radius: 7px;
+      padding: 6px 10px; cursor: pointer; font-size: 15px; line-height: 1;
+      transition: background 0.15s; color: var(--text);
+    }
+    .theme-btn:hover { background: var(--hover-bg); }
+
+    .lang-toggle { display: flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+    .lang-btn {
+      padding: 6px 11px; border: none; background: var(--card);
+      cursor: pointer; font-size: 12px; font-weight: 600;
+      color: var(--muted); transition: all 0.15s; font-family: inherit;
+    }
+    .lang-btn.active { background: var(--primary); color: #fff; }
+
+    .main { max-width: 980px; margin: 0 auto; padding: 28px 24px 48px; }
+    .main.wide { max-width: 1280px; }
+
+    .home-intro { margin-bottom: 22px; }
+    .home-kicker {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.7px;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
+    }
+    .home-heading { font-size: 26px; font-weight: 700; letter-spacing: -0.3px; }
+    .home-sub { color: var(--muted); margin-top: 6px; max-width: 52ch; }
+
+    .module-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .module-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px 24px 22px;
+      text-align: left;
+      cursor: pointer;
+      color: inherit;
+      font: inherit;
+      box-shadow: var(--shadow);
+      transition: transform 0.15s, border-color 0.15s, background 0.15s;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 220px;
+    }
+    .module-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+      background: var(--hover-bg);
+    }
+    .module-card:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+    .module-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      background: var(--primary);
+      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+    }
+    .module-name { font-size: 20px; font-weight: 700; }
+    .module-en { font-size: 13px; color: var(--primary-text); font-weight: 600; }
+    .module-desc { color: var(--muted); font-size: 13px; flex: 1; }
+    .module-go { font-size: 13px; font-weight: 600; color: var(--primary-text); }
+
+    .module-shell {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px 26px;
+      box-shadow: var(--shadow);
+    }
+    .module-shell h2 { font-size: 22px; margin-bottom: 6px; }
+    .module-shell .lead { color: var(--muted); margin-bottom: 18px; }
+    .checklist { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+    .checklist li {
+      list-style: none;
+      background: var(--card-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 13px;
+    }
+    .phase-note {
+      font-size: 13px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+    }
+
+    .toolbar {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 4px; }
+    .filter-label {
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.6px;
+    }
+    .filter-group input, .filter-group select {
+      padding: 7px 10px;
+      border: 1px solid var(--border); border-radius: 6px;
+      font-size: 13px; color: var(--text); background: var(--card);
+      outline: none; font-family: inherit;
+    }
+    .filter-group input:focus, .filter-group select:focus { border-color: var(--primary); }
+    #searchInput { min-width: 220px; }
+    .toolbar-spacer { flex: 1; }
+    .view-toggle { display: flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+    .view-btn {
+      padding: 7px 13px; border: none; background: var(--card);
+      cursor: pointer; font-size: 13px; color: var(--muted); font-weight: 500;
+      font-family: inherit;
+    }
+    .view-btn.active { background: var(--primary); color: #fff; }
+    .content-header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; margin-bottom: 10px;
+    }
+    .results-count { font-size: 13px; color: var(--muted); }
+    .content-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .table-wrap {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; overflow: auto;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      padding: 10px 14px; text-align: left;
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.6px;
+      background: var(--card-alt); border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid var(--border); }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--hover-bg); }
+    td { padding: 10px 14px; font-size: 13px; vertical-align: middle; }
+    td.num { color: var(--muted); font-size: 11px; width: 36px; }
+    td.date-cell { white-space: nowrap; color: var(--muted); }
+    td.ref-cell { font-family: 'Courier New', monospace; font-size: 12px; color: var(--primary-text); white-space: nowrap; }
+    .type-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 4px;
+      font-size: 11px; font-weight: 600;
+      background: var(--primary-light); color: var(--primary-text);
+    }
+    .actions-cell { display: flex; gap: 2px; }
+    .empty-state { padding: 56px 20px; text-align: center; color: var(--muted); }
+    .date-wrap { display: flex; align-items: stretch; position: relative; }
+    .date-wrap input[type="text"] { border-radius: 6px 0 0 6px; border-right: none; min-width: 108px; }
+    .cal-btn {
+      padding: 0 9px; border: 1px solid var(--border);
+      border-radius: 0 6px 6px 0; background: var(--card);
+      cursor: pointer; color: var(--muted); font-family: inherit;
+    }
+    .cal-btn:hover { background: var(--hover-bg); color: var(--text); }
+    .date-wrap input[type="date"] {
+      position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0;
+    }
+    .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .required-star { color: var(--danger); }
+    .group-list { display: flex; flex-direction: column; gap: 8px; }
+    .group-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .group-header {
+      padding: 13px 16px; display: flex; align-items: center; gap: 12px;
+      cursor: pointer; user-select: none;
+    }
+    .group-header:hover { background: var(--hover-bg); }
+    .group-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--primary-light); color: var(--primary-text);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; flex-shrink: 0;
+    }
+    .group-info { flex: 1; min-width: 0; }
+    .group-name { font-weight: 600; }
+    .group-meta { font-size: 12px; color: var(--muted); }
+    .group-count {
+      background: var(--primary-light); color: var(--primary-text);
+      padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    }
+    .group-chevron { color: var(--muted); font-size: 11px; }
+    .group-card.open .group-chevron { transform: rotate(180deg); }
+    .group-body { display: none; border-top: 1px solid var(--border); }
+    .group-card.open .group-body { display: block; }
+    .modal.wide { max-width: 640px; }
+    .hint { font-size: 12px; color: var(--muted); }
+
+    #loginScreen {
+      position: fixed; inset: 0; z-index: 400;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px;
+    }
+    .login-box {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 32px 36px 28px; width: 380px; max-width: 100%;
+      box-shadow: var(--shadow-lg); display: flex; flex-direction: column; gap: 14px;
+    }
+    .login-top { display: flex; justify-content: flex-end; gap: 8px; }
+    .login-logo {
+      width: 48px; height: 48px; background: var(--primary); border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; color: #fff; margin: 0 auto;
+    }
+    .login-title { text-align: center; font-size: 18px; font-weight: 700; }
+    .login-error {
+      background: rgba(180,99,122,0.15); color: var(--danger);
+      border: 1px solid var(--danger); border-radius: 6px;
+      padding: 8px 12px; font-size: 13px; display: none;
+    }
+    .login-box .btn-primary { width: 100%; justify-content: center; padding: 10px; }
+
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group label {
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .form-group input, .form-group select {
+      padding: 9px 10px; border: 1px solid var(--border); border-radius: 7px;
+      font-size: 13px; color: var(--text); outline: none; transition: border 0.15s;
+      background: var(--card); font-family: inherit;
+    }
+    .form-group input:focus, .form-group select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(113,156,214,0.15);
+    }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; }
+
+    .user-badge { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+    .role-pill {
+      font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px;
+      text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .role-pill.admin { background: var(--primary-light); color: var(--primary-text); }
+    .role-pill.user  { background: var(--border); color: var(--muted); }
+
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65); z-index: 200;
+      align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--card); border-radius: 12px;
+      width: 100%; max-width: 560px;
+      box-shadow: var(--shadow-lg); overflow: hidden;
+    }
+    .modal-header {
+      padding: 18px 22px 16px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-title { font-size: 15px; font-weight: 700; }
+    .modal-close {
+      background: none; border: none; cursor: pointer;
+      font-size: 20px; color: var(--muted); padding: 4px; line-height: 1; border-radius: 4px;
+    }
+    .modal-close:hover { background: var(--bg); color: var(--text); }
+    .modal-body { padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; }
+    .modal-footer {
+      padding: 14px 22px; border-top: 1px solid var(--border);
+      display: flex; justify-content: flex-end; gap: 8px;
+    }
+    .form-error {
+      display: none;
+      background: rgba(180,99,122,0.15); color: var(--danger);
+      border: 1px solid var(--danger); border-radius: 6px;
+      padding: 8px 12px; font-size: 13px;
+    }
+
+    .users-table { width: 100%; border-collapse: collapse; }
+    .users-table th {
+      padding: 8px 12px; text-align: left; font-size: 10px; font-weight: 700;
+      color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;
+      background: var(--card-alt); border-bottom: 1px solid var(--border);
+    }
+    .users-table td { padding: 9px 12px; font-size: 13px; border-bottom: 1px solid var(--border); }
+    .users-table tr:last-child td { border-bottom: none; }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 720px) {
+      .module-grid, .form-row, .form-row-2 { grid-template-columns: 1fr; }
+      .main { padding: 18px 14px 36px; }
+      .header { padding: 0 12px; }
+      .user-name, .col-addr, .col-city { display: none; }
+      #searchInput { min-width: 160px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-top">
+      <button class="theme-btn" id="loginThemeBtn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+      <div class="lang-toggle">
+        <button class="lang-btn active" id="loginBtnMK" onclick="setLang('mk')">МК</button>
+        <button class="lang-btn" id="loginBtnEN" onclick="setLang('en')">EN</button>
+      </div>
+    </div>
+    <div class="login-logo">⌂</div>
+    <div class="login-title" id="loginTitle">Office Log</div>
+    <div class="login-error" id="loginError"></div>
+    <div class="form-group">
+      <label id="lLoginUser">Корисник</label>
+      <input type="text" id="loginUsername" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="form-group">
+      <label id="lLoginPass">Лозинка</label>
+      <input type="password" id="loginPassword" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn btn-primary" onclick="doLogin()" id="btnLogin">Најава</button>
+  </div>
+</div>
+
+<header class="header">
+  <div class="header-left">
+    <button class="btn btn-ghost btn-sm hidden" id="btnBack" onclick="showView('home')">← <span id="lblBack">Назад</span></button>
+    <div class="header-icon" id="headerIcon">⌂</div>
+    <span class="header-title" id="headerTitle">Office Log</span>
+  </div>
+  <div class="header-actions">
+    <div class="user-badge hidden" id="userBadge">
+      <span class="user-name" id="userNameDisplay"></span>
+      <span class="role-pill" id="userRolePill"></span>
+    </div>
+    <button class="btn btn-secondary btn-sm hidden" id="btnPartners" onclick="openPartnersModal()">
+      <span id="lblPartners">Партнери</span>
+    </button>
+    <button class="btn btn-secondary btn-sm hidden" id="btnUsers" onclick="openUsersModal()">
+      👤 <span id="lblUsers">Корисници</span>
+    </button>
+    <button class="btn btn-secondary btn-sm hidden" id="btnPassword" onclick="openPasswordModal()">
+      <span id="lblPassword">Лозинка</span>
+    </button>
+    <button class="btn btn-secondary btn-sm hidden" id="btnLogout" onclick="doLogout()">
+      <span id="lblLogout">Одјава</span>
+    </button>
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+    <div class="lang-toggle">
+      <button class="lang-btn active" id="btnMK" onclick="setLang('mk')">МК</button>
+      <button class="lang-btn" id="btnEN" onclick="setLang('en')">EN</button>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <section id="viewHome">
+    <div class="home-intro">
+      <div class="home-kicker" id="homeKicker">Канцелариски дневници</div>
+      <h1 class="home-heading" id="homeHeading">Изберете книга</h1>
+      <p class="home-sub" id="homeSub">Една најава за пошта и за влезни фактури. Податоците се чуваат локално.</p>
+    </div>
+    <div class="module-grid">
+      <button class="module-card" onclick="showView('postal')">
+        <div class="module-icon">✉</div>
+        <div class="module-name" id="cardPostalMk">Книга за пошта</div>
+        <div class="module-en">Postal Log</div>
+        <div class="module-desc" id="cardPostalDesc">Излезни пратки, деловоден број и примач.</div>
+        <div class="module-go" id="cardPostalGo">Отвори →</div>
+      </button>
+      <button class="module-card" onclick="showView('invoices')">
+        <div class="module-icon">☰</div>
+        <div class="module-name" id="cardInvMk">Влезни фактури</div>
+        <div class="module-en">Incoming Invoices</div>
+        <div class="module-desc" id="cardInvDesc">Примени фактури, добавувач, износ и сметка.</div>
+        <div class="module-go" id="cardInvGo">Отвори →</div>
+      </button>
+    </div>
+  </section>
+
+  <section id="viewPostal" class="hidden">
+    <div class="toolbar">
+      <div class="filter-group">
+        <span class="filter-label" id="lblSearch">Пребарај</span>
+        <input type="text" id="searchInput" placeholder="Примач, број, даночен број..." oninput="onSearch()">
+      </div>
+      <div class="filter-group">
+        <span class="filter-label" id="lblYear">Година</span>
+        <select id="yearSelect" onchange="loadPostal()">
+          <option value="" id="optAllYears">Сите години</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label" id="lblDateFrom">Од датум</span>
+        <div class="date-wrap">
+          <input type="text" id="dateFromTxt" placeholder="dd.mm.yyyy" maxlength="10" oninput="onDateType('dateFromTxt','dateFrom',loadPostal)">
+          <button type="button" class="cal-btn" onclick="triggerPicker('dateFrom')">▦</button>
+          <input type="date" id="dateFrom" onchange="onDatePick('dateFrom','dateFromTxt');loadPostal()">
+        </div>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label" id="lblDateTo">До датум</span>
+        <div class="date-wrap">
+          <input type="text" id="dateToTxt" placeholder="dd.mm.yyyy" maxlength="10" oninput="onDateType('dateToTxt','dateTo',loadPostal)">
+          <button type="button" class="cal-btn" onclick="triggerPicker('dateTo')">▦</button>
+          <input type="date" id="dateTo" onchange="onDatePick('dateTo','dateToTxt');loadPostal()">
+        </div>
+      </div>
+      <div class="toolbar-spacer"></div>
+      <div class="view-toggle">
+        <button class="view-btn active" id="viewTableBtn" onclick="setPostalView('table')"><span id="lblTable">Табела</span></button>
+        <button class="view-btn" id="viewGroupBtn" onclick="setPostalView('group')"><span id="lblGroup">По примач</span></button>
+      </div>
+    </div>
+    <div class="content-header">
+      <div class="results-count" id="resultsCount"></div>
+      <div class="content-actions">
+        <button class="btn btn-primary btn-sm" onclick="openPackageModal()">＋ <span id="btnAdd">Додади пратка</span></button>
+        <button class="btn btn-secondary btn-sm" onclick="exportPostal('csv')">↓ <span id="btnCSV">Извоз CSV</span></button>
+        <button class="btn btn-secondary btn-sm" onclick="exportPostal('xlsx')">↓ <span id="btnXLSX">Извоз Excel</span></button>
+      </div>
+    </div>
+    <div id="postalContent"></div>
+  </section>
+
+  <section id="viewInvoices" class="hidden">
+    <div class="module-shell">
+      <h2 id="invTitle">Влезни фактури</h2>
+      <p class="lead" id="invLead">Книга за примени фактури. Записите доаѓаат во следниот чекор.</p>
+      <ul class="checklist">
+        <li id="invItem1">Внатрешен број 05-1, 05-2… се ресетира секоја година.</li>
+        <li id="invItem2">Датум на прием е денес, и може да се смени.</li>
+        <li id="invItem3">Добавувач, даночен број, број на фактура, износ и сметка.</li>
+      </ul>
+      <p class="phase-note" id="invNote">Модулот е поврзан. Внес на фактури е следен чекор.</p>
+    </div>
+  </section>
+</main>
+
+<div class="modal-overlay" id="packageOverlay">
+  <div class="modal wide">
+    <div class="modal-header">
+      <span class="modal-title" id="packageTitle">Додади пратка</span>
+      <button class="modal-close" onclick="closePackageModal()" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-error" id="packageError"></div>
+      <div class="form-group">
+        <label id="lPartner">Партнер</label>
+        <select id="fPartner" onchange="applyPartner()"></select>
+        <span class="hint" id="partnerHint">Изборот ги пополнува полињата. Може да се поправат.</span>
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label id="lSendDate">Датум <span class="required-star">*</span></label>
+          <div class="date-wrap">
+            <input type="text" id="fSendDateTxt" placeholder="dd.mm.yyyy" maxlength="10" oninput="onDateType('fSendDateTxt','fSendDate')">
+            <button type="button" class="cal-btn" onclick="triggerPicker('fSendDate')">▦</button>
+            <input type="date" id="fSendDate" onchange="onDatePick('fSendDate','fSendDateTxt')">
+          </div>
+        </div>
+        <div class="form-group">
+          <label id="lRefNumber">Деловоден број <span class="required-star">*</span></label>
+          <input type="text" id="fRefNumber" placeholder="03-145">
+        </div>
+      </div>
+      <div class="form-group">
+        <label id="lRecipient">Примач <span class="required-star">*</span></label>
+        <input type="text" id="fRecipient">
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label id="lAddress">Адреса</label>
+          <input type="text" id="fAddress">
+        </div>
+        <div class="form-group">
+          <label id="lCity">Град</label>
+          <input type="text" id="fCity">
+        </div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label id="lTax">Даночен број</label>
+          <input type="text" id="fTax">
+        </div>
+        <div class="form-group">
+          <label id="lType">Вид пратка</label>
+          <select id="fPackageType"></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label id="lNotes">Забелешка</label>
+        <input type="text" id="fNotes">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closePackageModal()" id="btnPackageCancel">Откажи</button>
+      <button class="btn btn-primary" onclick="savePackage()" id="btnPackageSave">Зачувај</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="partnersOverlay">
+  <div class="modal wide">
+    <div class="modal-header">
+      <span class="modal-title" id="partnersTitle">Партнери</span>
+      <button class="modal-close" onclick="closePartnersModal()" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-error" id="partnerError"></div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label id="lPName">Назив <span class="required-star">*</span></label>
+          <input type="text" id="pName">
+        </div>
+        <div class="form-group">
+          <label id="lPTax">Даночен број</label>
+          <input type="text" id="pTax">
+        </div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label id="lPAddress">Адреса</label>
+          <input type="text" id="pAddress">
+        </div>
+        <div class="form-group">
+          <label id="lPCity">Град</label>
+          <input type="text" id="pCity">
+        </div>
+      </div>
+      <div class="form-group">
+        <label id="lPNotes">Забелешка</label>
+        <input type="text" id="pNotes">
+      </div>
+      <div>
+        <button class="btn btn-primary btn-sm" onclick="savePartner()" id="btnPartnerSave">Зачувај</button>
+        <button class="btn btn-secondary btn-sm" onclick="resetPartnerForm()" id="btnPartnerClear">Нов</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th id="thPName">Назив</th>
+              <th id="thPTax">Даночен број</th>
+              <th id="thPCity">Град</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="partnersTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="passwordOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="passwordTitle">Промена на лозинка</span>
+      <button class="modal-close" onclick="closePasswordModal()" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-error" id="passwordError"></div>
+      <div class="form-group">
+        <label id="lCurrentPass">Тековна лозинка</label>
+        <input type="password" id="currentPassword" autocomplete="current-password">
+      </div>
+      <div class="form-group">
+        <label id="lNewPass">Нова лозинка</label>
+        <input type="password" id="newPassword" autocomplete="new-password">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closePasswordModal()" id="btnPasswordCancel">Откажи</button>
+      <button class="btn btn-primary" onclick="savePassword()" id="btnPasswordSave">Зачувај</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="usersOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="usersTitle">Управување со корисници</span>
+      <button class="modal-close" onclick="closeUsersModal()" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-error" id="userFormError"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label id="lUUsername">Корисник</label>
+          <input type="text" id="uUsername" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label id="lUPassword">Лозинка</label>
+          <input type="password" id="uPassword" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label id="lURole">Улога</label>
+          <select id="uRole">
+            <option value="user" id="optRoleUser">Корисник</option>
+            <option value="admin" id="optRoleAdmin">Администратор</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <button class="btn btn-primary btn-sm" onclick="addUser()" id="btnAddUser">Додади корисник</button>
+      </div>
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th id="thUser">Корисник</th>
+            <th id="thRole">Улога</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="usersTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const S = {
+  mk: {
+    appTitle: 'Office Log',
+    loginTitle: 'Office Log',
+    loginUser: 'Корисник',
+    loginPass: 'Лозинка',
+    loginBtn: 'Најава',
+    loginFail: 'Погрешно корисничко име или лозинка.',
+    logout: 'Одјава',
+    users: 'Корисници',
+    partners: 'Партнери',
+    password: 'Лозинка',
+    back: 'Назад',
+    kicker: 'Канцелариски дневници',
+    heading: 'Изберете книга',
+    sub: 'Една најава за пошта и за влезни фактури. Податоците се чуваат локално.',
+    postalMk: 'Книга за пошта',
+    postalDesc: 'Излезни пратки, деловоден број и примач.',
+    invMk: 'Влезни фактури',
+    invDesc: 'Примени фактури, добавувач, износ и сметка.',
+    open: 'Отвори →',
+    search: 'Пребарај',
+    searchPh: 'Примач, број, даночен број...',
+    year: 'Година',
+    allYears: 'Сите години',
+    dateFrom: 'Од датум',
+    dateTo: 'До датум',
+    table: 'Табела',
+    group: 'По примач',
+    add: 'Додади пратка',
+    edit: 'Уреди пратка',
+    exportCSV: 'Извоз CSV',
+    exportXLSX: 'Извоз Excel',
+    sendDate: 'Датум',
+    refNumber: 'Деловоден број',
+    recipient: 'Примач',
+    address: 'Адреса',
+    city: 'Град',
+    tax: 'Даночен број',
+    type: 'Вид пратка',
+    notes: 'Забелешка',
+    partner: 'Партнер',
+    noPartner: 'Без партнер',
+    partnerHint: 'Изборот ги пополнува полињата. Може да се поправат.',
+    results: n => `${n} ${n === 1 ? 'пратка' : 'пратки'}`,
+    noResults: 'Нема пратки.',
+    confirmDel: 'Дали сте сигурни дека сакате да ја избришете оваа пратка?',
+    packageRequired: 'Пополнете датум, деловоден број и примач.',
+    packagesWord: 'пратки',
+    partnersTitle: 'Партнери',
+    partnerName: 'Назив',
+    partnerRequired: 'Називот е задолжителен.',
+    confirmDelPartner: 'Да се избрише овој партнер? Пратките остануваат.',
+    newPartner: 'Нов',
+    savePartner: 'Зачувај',
+    invLead: 'Книга за примени фактури. Записите доаѓаат во следниот чекор.',
+    inv1: 'Внатрешен број 05-1, 05-2… се ресетира секоја година.',
+    inv2: 'Датум на прием е денес, и може да се смени.',
+    inv3: 'Добавувач, даночен број, број на фактура, износ и сметка.',
+    invNote: 'Модулот е поврзан. Внес на фактури е следен чекор.',
+    passwordTitle: 'Промена на лозинка',
+    currentPass: 'Тековна лозинка',
+    newPass: 'Нова лозинка',
+    cancel: 'Откажи',
+    save: 'Зачувај',
+    passwordRequired: 'Внесете тековна и нова лозинка.',
+    passwordWrong: 'Тековната лозинка не е точна.',
+    passwordSaved: 'Лозинката е променета.',
+    usersTitle: 'Управување со корисници',
+    addUser: 'Додади корисник',
+    uUsername: 'Корисник',
+    uPassword: 'Лозинка',
+    uRole: 'Улога',
+    roleAdmin: 'Администратор',
+    roleUser: 'Корисник',
+    confirmDelUser: 'Дали сте сигурни дека сакате да го избришете овој корисник?',
+    userRequired: 'Корисник и лозинка се задолжителни.',
+    roleLabel: { admin: 'Администратор', user: 'Корисник' },
+    titles: { home: 'Office Log', postal: 'Книга за пошта', invoices: 'Влезни фактури' },
+    icons: { home: '⌂', postal: '✉', invoices: '☰' }
+  },
+  en: {
+    appTitle: 'Office Log',
+    loginTitle: 'Office Log',
+    loginUser: 'Username',
+    loginPass: 'Password',
+    loginBtn: 'Login',
+    loginFail: 'Invalid username or password.',
+    logout: 'Logout',
+    users: 'Users',
+    partners: 'Partners',
+    password: 'Password',
+    back: 'Back',
+    kicker: 'Office logs',
+    heading: 'Choose a book',
+    sub: 'One login for postal packages and incoming invoices. Data stays on this computer.',
+    postalMk: 'Postal Log',
+    postalDesc: 'Outgoing packages, reference number, and recipient.',
+    invMk: 'Incoming Invoices',
+    invDesc: 'Received invoices, supplier, amount, and account.',
+    open: 'Open →',
+    search: 'Search',
+    searchPh: 'Recipient, number, tax number...',
+    year: 'Year',
+    allYears: 'All years',
+    dateFrom: 'From date',
+    dateTo: 'To date',
+    table: 'Table',
+    group: 'By recipient',
+    add: 'Add package',
+    edit: 'Edit package',
+    exportCSV: 'Export CSV',
+    exportXLSX: 'Export Excel',
+    sendDate: 'Date',
+    refNumber: 'Reference no.',
+    recipient: 'Recipient',
+    address: 'Address',
+    city: 'City',
+    tax: 'Tax number',
+    type: 'Package type',
+    notes: 'Note',
+    partner: 'Partner',
+    noPartner: 'No partner',
+    partnerHint: 'Choosing a partner fills the fields. You can still edit them.',
+    results: n => `${n} ${n === 1 ? 'package' : 'packages'}`,
+    noResults: 'No packages found.',
+    confirmDel: 'Delete this package?',
+    packageRequired: 'Fill in date, reference number, and recipient.',
+    packagesWord: 'packages',
+    partnersTitle: 'Partners',
+    partnerName: 'Name',
+    partnerRequired: 'Name is required.',
+    confirmDelPartner: 'Delete this partner? Existing packages stay.',
+    newPartner: 'New',
+    savePartner: 'Save',
+    invLead: 'Book of received invoices. Entries come in the next step.',
+    inv1: 'Internal number 05-1, 05-2… resets every year.',
+    inv2: 'Received date starts as today, and can be changed.',
+    inv3: 'Supplier, tax number, invoice number, amount, and account.',
+    invNote: 'The module is wired up. Invoice entry is the next step.',
+    passwordTitle: 'Change password',
+    currentPass: 'Current password',
+    newPass: 'New password',
+    cancel: 'Cancel',
+    save: 'Save',
+    passwordRequired: 'Enter the current and new password.',
+    passwordWrong: 'Current password is incorrect.',
+    passwordSaved: 'Password changed.',
+    usersTitle: 'User management',
+    addUser: 'Add user',
+    uUsername: 'Username',
+    uPassword: 'Password',
+    uRole: 'Role',
+    roleAdmin: 'Admin',
+    roleUser: 'User',
+    confirmDelUser: 'Are you sure you want to delete this user?',
+    userRequired: 'Username and password are required.',
+    roleLabel: { admin: 'Admin', user: 'User' },
+    titles: { home: 'Office Log', postal: 'Postal Log', invoices: 'Incoming Invoices' },
+    icons: { home: '⌂', postal: '✉', invoices: '☰' }
+  }
+};
+
+const MK_TYPES = [
+  'обична',
+  'препорачана',
+  'препорачана со повратница',
+  'брза пошта',
+  'брза пошта препорачана со повратница'
+];
+const EN_TYPES = [
+  'Regular',
+  'Registered',
+  'Registered with return receipt',
+  'Express mail',
+  'Express mail with return receipt'
+];
+
+let lang = localStorage.getItem('lang') || 'mk';
+let theme = localStorage.getItem('theme') || 'light';
+let view = sessionStorage.getItem('view') || 'home';
+let postalView = localStorage.getItem('postalView') || 'table';
+let currentUser = null;
+let packages = [];
+let partners = [];
+let currentEdit = null;
+let currentPartner = null;
+let searchTimer = null;
+
+const t = key => S[lang][key];
+
+function esc(v) {
+  if (v == null) return '';
+  return String(v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function setTheme(next) {
+  theme = next;
+  localStorage.setItem('theme', theme);
+  document.documentElement.setAttribute('data-theme', theme);
+  const mark = theme === 'dark' ? '☀' : '🌙';
+  document.getElementById('themeBtn').textContent = mark;
+  document.getElementById('loginThemeBtn').textContent = mark;
+}
+
+function toggleTheme() {
+  setTheme(theme === 'dark' ? 'light' : 'dark');
+}
+
+function setLang(next) {
+  lang = next;
+  localStorage.setItem('lang', lang);
+  ['btnMK', 'loginBtnMK'].forEach(id => document.getElementById(id).classList.toggle('active', lang === 'mk'));
+  ['btnEN', 'loginBtnEN'].forEach(id => document.getElementById(id).classList.toggle('active', lang === 'en'));
+  applyLang();
+}
+
+function applyLang() {
+  const s = S[lang];
+  document.documentElement.lang = lang;
+  document.getElementById('loginTitle').textContent = s.loginTitle;
+  document.getElementById('lLoginUser').textContent = s.loginUser;
+  document.getElementById('lLoginPass').textContent = s.loginPass;
+  document.getElementById('btnLogin').textContent = s.loginBtn;
+  document.getElementById('lblBack').textContent = s.back;
+  document.getElementById('lblPartners').textContent = s.partners;
+  document.getElementById('lblUsers').textContent = s.users;
+  document.getElementById('lblPassword').textContent = s.password;
+  document.getElementById('lblLogout').textContent = s.logout;
+  document.getElementById('lblSearch').textContent = s.search;
+  document.getElementById('searchInput').placeholder = s.searchPh;
+  document.getElementById('lblYear').textContent = s.year;
+  document.getElementById('optAllYears').textContent = s.allYears;
+  document.getElementById('lblDateFrom').textContent = s.dateFrom;
+  document.getElementById('lblDateTo').textContent = s.dateTo;
+  document.getElementById('lblTable').textContent = s.table;
+  document.getElementById('lblGroup').textContent = s.group;
+  document.getElementById('btnAdd').textContent = s.add;
+  document.getElementById('btnCSV').textContent = s.exportCSV;
+  document.getElementById('btnXLSX').textContent = s.exportXLSX;
+  document.getElementById('lPartner').textContent = s.partner;
+  document.getElementById('partnerHint').textContent = s.partnerHint;
+  document.getElementById('lSendDate').innerHTML = s.sendDate + ' <span class="required-star">*</span>';
+  document.getElementById('lRefNumber').innerHTML = s.refNumber + ' <span class="required-star">*</span>';
+  document.getElementById('lRecipient').innerHTML = s.recipient + ' <span class="required-star">*</span>';
+  document.getElementById('lAddress').textContent = s.address;
+  document.getElementById('lCity').textContent = s.city;
+  document.getElementById('lTax').textContent = s.tax;
+  document.getElementById('lType').textContent = s.type;
+  document.getElementById('lNotes').textContent = s.notes;
+  document.getElementById('btnPackageCancel').textContent = s.cancel;
+  document.getElementById('btnPackageSave').textContent = s.save;
+  document.getElementById('partnersTitle').textContent = s.partnersTitle;
+  document.getElementById('lPName').innerHTML = s.partnerName + ' <span class="required-star">*</span>';
+  document.getElementById('lPTax').textContent = s.tax;
+  document.getElementById('lPAddress').textContent = s.address;
+  document.getElementById('lPCity').textContent = s.city;
+  document.getElementById('lPNotes').textContent = s.notes;
+  document.getElementById('btnPartnerSave').textContent = s.savePartner;
+  document.getElementById('btnPartnerClear').textContent = s.newPartner;
+  document.getElementById('thPName').textContent = s.partnerName;
+  document.getElementById('thPTax').textContent = s.tax;
+  document.getElementById('thPCity').textContent = s.city;
+  document.getElementById('homeKicker').textContent = s.kicker;
+  document.getElementById('homeHeading').textContent = s.heading;
+  document.getElementById('homeSub').textContent = s.sub;
+  document.getElementById('cardPostalMk').textContent = s.postalMk;
+  document.getElementById('cardPostalDesc').textContent = s.postalDesc;
+  document.getElementById('cardPostalGo').textContent = s.open;
+  document.getElementById('cardInvMk').textContent = s.invMk;
+  document.getElementById('cardInvDesc').textContent = s.invDesc;
+  document.getElementById('cardInvGo').textContent = s.open;
+  document.getElementById('invTitle').textContent = s.titles.invoices;
+  document.getElementById('invLead').textContent = s.invLead;
+  document.getElementById('invItem1').textContent = s.inv1;
+  document.getElementById('invItem2').textContent = s.inv2;
+  document.getElementById('invItem3').textContent = s.inv3;
+  document.getElementById('invNote').textContent = s.invNote;
+  document.getElementById('passwordTitle').textContent = s.passwordTitle;
+  document.getElementById('lCurrentPass').textContent = s.currentPass;
+  document.getElementById('lNewPass').textContent = s.newPass;
+  document.getElementById('btnPasswordCancel').textContent = s.cancel;
+  document.getElementById('btnPasswordSave').textContent = s.save;
+  document.getElementById('usersTitle').textContent = s.usersTitle;
+  document.getElementById('lUUsername').textContent = s.uUsername;
+  document.getElementById('lUPassword').textContent = s.uPassword;
+  document.getElementById('lURole').textContent = s.uRole;
+  document.getElementById('optRoleUser').textContent = s.roleUser;
+  document.getElementById('optRoleAdmin').textContent = s.roleAdmin;
+  document.getElementById('btnAddUser').textContent = s.addUser;
+  document.getElementById('thUser').textContent = s.uUsername;
+  document.getElementById('thRole').textContent = s.uRole;
+  if (currentUser) {
+    document.getElementById('userRolePill').textContent = s.roleLabel[currentUser.role] || currentUser.role;
+  }
+  applyViewChrome();
+  if (currentUser && view === 'postal') renderPostal();
+}
+
+function applyViewChrome() {
+  const s = S[lang];
+  const name = currentUser ? view : 'home';
+  document.title = s.titles[name] || s.appTitle;
+  document.getElementById('headerTitle').textContent = s.titles[name] || s.appTitle;
+  document.getElementById('headerIcon').textContent = s.icons[name] || '⌂';
+  document.getElementById('btnBack').classList.toggle('hidden', !currentUser || name === 'home');
+}
+
+function showView(name) {
+  view = name;
+  sessionStorage.setItem('view', name);
+  document.getElementById('viewHome').classList.toggle('hidden', name !== 'home');
+  document.getElementById('viewPostal').classList.toggle('hidden', name !== 'postal');
+  document.getElementById('viewInvoices').classList.toggle('hidden', name !== 'invoices');
+  document.querySelector('.main').classList.toggle('wide', name === 'postal');
+  applyViewChrome();
+  if (currentUser && name === 'postal') loadPostal();
+}
+
+function showLogin() {
+  document.getElementById('loginScreen').style.display = 'flex';
+  ['userBadge', 'btnLogout', 'btnUsers', 'btnPartners', 'btnPassword', 'btnBack'].forEach(id => {
+    document.getElementById(id).classList.add('hidden');
+  });
+  setTimeout(() => document.getElementById('loginUsername').focus(), 50);
+}
+
+function showApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('loginError').style.display = 'none';
+  document.getElementById('loginUsername').value = '';
+  document.getElementById('loginPassword').value = '';
+  const isAdmin = currentUser.role === 'admin';
+  document.getElementById('userBadge').classList.remove('hidden');
+  document.getElementById('userNameDisplay').textContent = currentUser.username;
+  const pill = document.getElementById('userRolePill');
+  pill.textContent = t('roleLabel')[currentUser.role] || currentUser.role;
+  pill.className = 'role-pill ' + currentUser.role;
+  document.getElementById('btnLogout').classList.remove('hidden');
+  document.getElementById('btnPassword').classList.remove('hidden');
+  document.getElementById('btnPartners').classList.remove('hidden');
+  document.getElementById('btnUsers').classList.toggle('hidden', !isAdmin);
+  if (!['home', 'postal', 'invoices'].includes(view)) view = 'home';
+  showView(view);
+}
+
+async function checkAuth() {
+  const res = await fetch('/api/me');
+  if (res.ok) {
+    currentUser = await res.json();
+    showApp();
+  } else {
+    currentUser = null;
+    showLogin();
+  }
+}
+
+async function doLogin() {
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
+  if (!username || !password) return;
+  const res = await fetch('/api/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+  if (res.ok) {
+    currentUser = await res.json();
+    view = 'home';
+    showApp();
+  } else {
+    errEl.textContent = t('loginFail');
+    errEl.style.display = 'block';
+  }
+}
+
+async function doLogout() {
+  await fetch('/api/logout', { method: 'POST' });
+  currentUser = null;
+  view = 'home';
+  sessionStorage.removeItem('view');
+  showView('home');
+  showLogin();
+}
+
+function openPasswordModal() {
+  document.getElementById('currentPassword').value = '';
+  document.getElementById('newPassword').value = '';
+  document.getElementById('passwordError').style.display = 'none';
+  document.getElementById('passwordOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('currentPassword').focus(), 40);
+}
+
+function closePasswordModal() {
+  document.getElementById('passwordOverlay').classList.remove('open');
+}
+
+async function savePassword() {
+  const current_password = document.getElementById('currentPassword').value;
+  const password = document.getElementById('newPassword').value.trim();
+  const errEl = document.getElementById('passwordError');
+  errEl.style.display = 'none';
+  if (!current_password || !password) {
+    errEl.textContent = t('passwordRequired');
+    errEl.style.display = 'block';
+    return;
+  }
+  const res = await fetch('/api/me/password', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ current_password, password })
+  });
+  if (res.ok) {
+    closePasswordModal();
+    return;
+  }
+  errEl.textContent = t('passwordWrong');
+  errEl.style.display = 'block';
+}
+
+function openUsersModal() {
+  document.getElementById('usersOverlay').classList.add('open');
+  document.getElementById('userFormError').style.display = 'none';
+  loadUsersTable();
+}
+
+function closeUsersModal() {
+  document.getElementById('usersOverlay').classList.remove('open');
+  document.getElementById('uUsername').value = '';
+  document.getElementById('uPassword').value = '';
+  document.getElementById('uRole').value = 'user';
+}
+
+async function loadUsersTable() {
+  const res = await fetch('/api/users');
+  if (!res.ok) return;
+  const users = await res.json();
+  const s = S[lang];
+  document.getElementById('usersTableBody').innerHTML = users.map(u => `
+    <tr>
+      <td>${esc(u.username)}</td>
+      <td><span class="role-pill ${esc(u.role)}">${esc(s.roleLabel[u.role] || u.role)}</span></td>
+      <td>${u.id !== currentUser.id
+        ? `<button class="btn btn-danger-ghost btn-sm" onclick="deleteUser(${u.id})">✕</button>`
+        : ''}</td>
+    </tr>`).join('') || '<tr><td colspan="3">—</td></tr>';
+}
+
+async function addUser() {
+  const username = document.getElementById('uUsername').value.trim();
+  const password = document.getElementById('uPassword').value.trim();
+  const role = document.getElementById('uRole').value;
+  const errEl = document.getElementById('userFormError');
+  errEl.style.display = 'none';
+  if (!username || !password) {
+    errEl.textContent = t('userRequired');
+    errEl.style.display = 'block';
+    return;
+  }
+  const res = await fetch('/api/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password, role })
+  });
+  if (res.ok) {
+    document.getElementById('uUsername').value = '';
+    document.getElementById('uPassword').value = '';
+    await loadUsersTable();
+    return;
+  }
+  const data = await res.json().catch(() => ({}));
+  errEl.textContent = data.error || 'Error';
+  errEl.style.display = 'block';
+}
+
+async function deleteUser(id) {
+  if (!confirm(t('confirmDelUser'))) return;
+  await fetch('/api/users/' + id, { method: 'DELETE' });
+  await loadUsersTable();
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const parts = iso.split('-');
+  if (parts.length !== 3) return iso;
+  return parts[2] + '.' + parts[1] + '.' + parts[0];
+}
+
+function onDatePick(dateId, txtId) {
+  document.getElementById(txtId).value = fmtDate(document.getElementById(dateId).value);
+}
+
+function onDateType(txtId, dateId, onComplete) {
+  const el = document.getElementById(txtId);
+  let v = el.value.replace(/[^\d.]/g, '');
+  if (/^\d{2}$/.test(v) || /^\d{2}\.\d{2}$/.test(v)) v += '.';
+  el.value = v;
+  const m = v.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+  document.getElementById(dateId).value = m ? m[3] + '-' + m[2] + '-' + m[1] : '';
+  if (m && onComplete) onComplete();
+}
+
+function triggerPicker(id) {
+  const el = document.getElementById(id);
+  try { el.showPicker(); } catch (e) { el.focus(); }
+}
+
+function typeLabel(mkType) {
+  const i = MK_TYPES.indexOf(mkType);
+  return lang === 'mk' || i < 0 ? mkType : EN_TYPES[i];
+}
+
+function postalParams() {
+  const p = new URLSearchParams();
+  const s = document.getElementById('searchInput').value.trim();
+  const y = document.getElementById('yearSelect').value;
+  const from = document.getElementById('dateFrom').value;
+  const to = document.getElementById('dateTo').value;
+  if (s) p.set('search', s);
+  if (y) p.set('year', y);
+  if (from) p.set('date_from', from);
+  if (to) p.set('date_to', to);
+  return p;
+}
+
+function onSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(loadPostal, 280);
+}
+
+function setPostalView(next) {
+  postalView = next;
+  localStorage.setItem('postalView', next);
+  document.getElementById('viewTableBtn').classList.toggle('active', next === 'table');
+  document.getElementById('viewGroupBtn').classList.toggle('active', next === 'group');
+  renderPostal();
+}
+
+async function loadPartners() {
+  const res = await fetch('/api/partners');
+  if (!res.ok) return;
+  partners = await res.json();
+}
+
+async function loadPostal() {
+  const [listRes, yearRes] = await Promise.all([
+    fetch('/api/postal/packages?' + postalParams()),
+    fetch('/api/postal/years')
+  ]);
+  if (!listRes.ok) return;
+  packages = await listRes.json();
+  if (yearRes.ok) {
+    const years = await yearRes.json();
+    const sel = document.getElementById('yearSelect');
+    const cur = sel.value;
+    while (sel.options.length > 1) sel.remove(1);
+    years.forEach(y => {
+      const o = document.createElement('option');
+      o.value = y;
+      o.textContent = y;
+      sel.appendChild(o);
+    });
+    if (cur) sel.value = cur;
+  }
+  renderPostal();
+}
+
+function actionButtons(id) {
+  if (currentUser?.role !== 'admin') return '';
+  return `<div class="actions-cell">
+    <button class="btn btn-ghost btn-sm" onclick="openPackageModal(${id})">✎</button>
+    <button class="btn btn-danger-ghost btn-sm" onclick="deletePackage(${id})">✕</button>
+  </div>`;
+}
+
+function renderPostal() {
+  document.getElementById('resultsCount').textContent = t('results')(packages.length);
+  document.getElementById('viewTableBtn').classList.toggle('active', postalView === 'table');
+  document.getElementById('viewGroupBtn').classList.toggle('active', postalView === 'group');
+  postalView === 'table' ? renderTable() : renderGroup();
+}
+
+function renderTable() {
+  const s = S[lang];
+  const el = document.getElementById('postalContent');
+  if (!packages.length) {
+    el.innerHTML = `<div class="table-wrap"><div class="empty-state">${esc(s.noResults)}</div></div>`;
+    return;
+  }
+  const rows = packages.map((p, i) => `
+    <tr>
+      <td class="num">${i + 1}</td>
+      <td class="date-cell">${esc(fmtDate(p.send_date))}</td>
+      <td class="ref-cell">${esc(p.ref_number)}</td>
+      <td><strong>${esc(p.recipient_name)}</strong></td>
+      <td>${esc(p.tax_number)}</td>
+      <td class="col-addr">${esc(p.recipient_address)}</td>
+      <td class="col-city">${esc(p.city)}</td>
+      <td><span class="type-badge">${esc(typeLabel(p.package_type))}</span></td>
+      <td>${actionButtons(p.id)}</td>
+    </tr>`).join('');
+  el.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr>
+      <th>#</th><th>${esc(s.sendDate)}</th><th>${esc(s.refNumber)}</th>
+      <th>${esc(s.recipient)}</th><th>${esc(s.tax)}</th>
+      <th class="col-addr">${esc(s.address)}</th><th class="col-city">${esc(s.city)}</th>
+      <th>${esc(s.type)}</th><th></th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function renderGroup() {
+  const s = S[lang];
+  const el = document.getElementById('postalContent');
+  if (!packages.length) {
+    el.innerHTML = `<div class="table-wrap"><div class="empty-state">${esc(s.noResults)}</div></div>`;
+    return;
+  }
+  const map = {};
+  packages.forEach(p => {
+    const key = p.recipient_name || '—';
+    if (!map[key]) map[key] = [];
+    map[key].push(p);
+  });
+  const cards = Object.keys(map).sort((a, b) => a.localeCompare(b)).map(name => {
+    const list = map[name];
+    const initials = name.split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
+    const tax = list.find(p => p.tax_number)?.tax_number || '';
+    const rows = list.map(p => `
+      <tr>
+        <td class="date-cell">${esc(fmtDate(p.send_date))}</td>
+        <td class="ref-cell">${esc(p.ref_number)}</td>
+        <td>${esc(p.tax_number)}</td>
+        <td class="col-addr">${esc(p.recipient_address)}</td>
+        <td class="col-city">${esc(p.city)}</td>
+        <td><span class="type-badge">${esc(typeLabel(p.package_type))}</span></td>
+        <td>${actionButtons(p.id)}</td>
+      </tr>`).join('');
+    return `<div class="group-card">
+      <div class="group-header" onclick="this.parentElement.classList.toggle('open')">
+        <div class="group-avatar">${esc(initials)}</div>
+        <div class="group-info">
+          <div class="group-name">${esc(name)}</div>
+          <div class="group-meta">${tax ? esc(s.tax) + ': ' + esc(tax) : ''}</div>
+        </div>
+        <span class="group-count">${list.length} ${esc(s.packagesWord)}</span>
+        <span class="group-chevron">▼</span>
+      </div>
+      <div class="group-body"><table>
+        <thead><tr>
+          <th>${esc(s.sendDate)}</th><th>${esc(s.refNumber)}</th><th>${esc(s.tax)}</th>
+          <th class="col-addr">${esc(s.address)}</th><th class="col-city">${esc(s.city)}</th>
+          <th>${esc(s.type)}</th><th></th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div>`;
+  }).join('');
+  el.innerHTML = `<div class="group-list">${cards}</div>`;
+}
+
+function fillPartnerSelect(selected) {
+  const sel = document.getElementById('fPartner');
+  sel.innerHTML = `<option value="">${esc(t('noPartner'))}</option>` +
+    partners.map(p => `<option value="${p.id}">${esc(p.name)}${p.tax_number ? ' · ' + esc(p.tax_number) : ''}</option>`).join('');
+  sel.value = selected || '';
+}
+
+function fillTypeSelect(selected) {
+  const sel = document.getElementById('fPackageType');
+  sel.innerHTML = MK_TYPES.map((mk, i) =>
+    `<option value="${esc(mk)}">${esc(lang === 'mk' ? mk : EN_TYPES[i])}</option>`
+  ).join('');
+  sel.value = selected && MK_TYPES.includes(selected) ? selected : MK_TYPES[0];
+}
+
+async function openPackageModal(id = null) {
+  currentEdit = id;
+  document.getElementById('packageError').style.display = 'none';
+  document.getElementById('packageTitle').textContent = id ? t('edit') : t('add');
+  await loadPartners();
+  if (id) {
+    const p = packages.find(x => x.id === id);
+    fillPartnerSelect(p?.partner_id || '');
+    fillTypeSelect(p?.package_type);
+    document.getElementById('fSendDate').value = p?.send_date || '';
+    document.getElementById('fSendDateTxt').value = fmtDate(p?.send_date);
+    document.getElementById('fRefNumber').value = p?.ref_number || '';
+    document.getElementById('fRecipient').value = p?.recipient_name || '';
+    document.getElementById('fAddress').value = p?.recipient_address || '';
+    document.getElementById('fCity').value = p?.city || '';
+    document.getElementById('fTax').value = p?.tax_number || '';
+    document.getElementById('fNotes').value = p?.notes || '';
+  } else {
+    const today = new Date().toISOString().slice(0, 10);
+    fillPartnerSelect('');
+    fillTypeSelect(MK_TYPES[0]);
+    document.getElementById('fSendDate').value = today;
+    document.getElementById('fSendDateTxt').value = fmtDate(today);
+    ['fRefNumber', 'fRecipient', 'fAddress', 'fCity', 'fTax', 'fNotes'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+  }
+  document.getElementById('packageOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('fRefNumber').focus(), 40);
+}
+
+function closePackageModal() {
+  document.getElementById('packageOverlay').classList.remove('open');
+  currentEdit = null;
+}
+
+function applyPartner() {
+  const id = Number(document.getElementById('fPartner').value);
+  const partner = partners.find(p => p.id === id);
+  if (!partner) return;
+  document.getElementById('fRecipient').value = partner.name || '';
+  document.getElementById('fAddress').value = partner.address || '';
+  document.getElementById('fCity').value = partner.city || '';
+  document.getElementById('fTax').value = partner.tax_number || '';
+}
+
+async function savePackage() {
+  const data = {
+    send_date: document.getElementById('fSendDate').value,
+    ref_number: document.getElementById('fRefNumber').value.trim(),
+    partner_id: document.getElementById('fPartner').value || null,
+    recipient_name: document.getElementById('fRecipient').value.trim(),
+    recipient_address: document.getElementById('fAddress').value.trim(),
+    city: document.getElementById('fCity').value.trim(),
+    tax_number: document.getElementById('fTax').value.trim(),
+    package_type: document.getElementById('fPackageType').value,
+    notes: document.getElementById('fNotes').value.trim()
+  };
+  const errEl = document.getElementById('packageError');
+  errEl.style.display = 'none';
+  if (!data.send_date || !data.ref_number || !data.recipient_name) {
+    errEl.textContent = t('packageRequired');
+    errEl.style.display = 'block';
+    return;
+  }
+  const url = currentEdit ? '/api/postal/packages/' + currentEdit : '/api/postal/packages';
+  const res = await fetch(url, {
+    method: currentEdit ? 'PUT' : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    errEl.textContent = body.error || 'Error';
+    errEl.style.display = 'block';
+    return;
+  }
+  closePackageModal();
+  await loadPostal();
+}
+
+async function deletePackage(id) {
+  if (!confirm(t('confirmDel'))) return;
+  await fetch('/api/postal/packages/' + id, { method: 'DELETE' });
+  await loadPostal();
+}
+
+function exportPostal(fmt) {
+  const p = postalParams();
+  p.set('format', fmt);
+  window.location.href = '/api/postal/export?' + p;
+}
+
+function resetPartnerForm() {
+  currentPartner = null;
+  ['pName', 'pTax', 'pAddress', 'pCity', 'pNotes'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('partnerError').style.display = 'none';
+}
+
+function renderPartners() {
+  const s = S[lang];
+  document.getElementById('partnersTableBody').innerHTML = partners.map(p => `
+    <tr>
+      <td>${esc(p.name)}</td>
+      <td>${esc(p.tax_number)}</td>
+      <td>${esc(p.city)}</td>
+      <td class="actions-cell">
+        <button class="btn btn-ghost btn-sm" onclick="editPartner(${p.id})">✎</button>
+        ${currentUser?.role === 'admin' ? `<button class="btn btn-danger-ghost btn-sm" onclick="deletePartner(${p.id})">✕</button>` : ''}
+      </td>
+    </tr>`).join('') || `<tr><td colspan="4">${esc(s.noResults)}</td></tr>`;
+}
+
+async function openPartnersModal() {
+  resetPartnerForm();
+  await loadPartners();
+  renderPartners();
+  document.getElementById('partnersOverlay').classList.add('open');
+}
+
+function closePartnersModal() {
+  document.getElementById('partnersOverlay').classList.remove('open');
+  currentPartner = null;
+}
+
+function editPartner(id) {
+  const p = partners.find(x => x.id === id);
+  if (!p) return;
+  currentPartner = id;
+  document.getElementById('pName').value = p.name || '';
+  document.getElementById('pTax').value = p.tax_number || '';
+  document.getElementById('pAddress').value = p.address || '';
+  document.getElementById('pCity').value = p.city || '';
+  document.getElementById('pNotes').value = p.notes || '';
+}
+
+async function savePartner() {
+  const data = {
+    name: document.getElementById('pName').value.trim(),
+    tax_number: document.getElementById('pTax').value.trim(),
+    address: document.getElementById('pAddress').value.trim(),
+    city: document.getElementById('pCity').value.trim(),
+    notes: document.getElementById('pNotes').value.trim()
+  };
+  const errEl = document.getElementById('partnerError');
+  errEl.style.display = 'none';
+  if (!data.name) {
+    errEl.textContent = t('partnerRequired');
+    errEl.style.display = 'block';
+    return;
+  }
+  const url = currentPartner ? '/api/partners/' + currentPartner : '/api/partners';
+  const res = await fetch(url, {
+    method: currentPartner ? 'PUT' : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    errEl.textContent = body.error || 'Error';
+    errEl.style.display = 'block';
+    return;
+  }
+  resetPartnerForm();
+  await loadPartners();
+  renderPartners();
+}
+
+async function deletePartner(id) {
+  if (!confirm(t('confirmDelPartner'))) return;
+  await fetch('/api/partners/' + id, { method: 'DELETE' });
+  if (currentPartner === id) resetPartnerForm();
+  await loadPartners();
+  renderPartners();
+}
+
+['passwordOverlay', 'usersOverlay', 'packageOverlay', 'partnersOverlay'].forEach(id => {
+  document.getElementById(id).addEventListener('click', e => {
+    if (e.target !== e.currentTarget) return;
+    if (id === 'passwordOverlay') closePasswordModal();
+    if (id === 'usersOverlay') closeUsersModal();
+    if (id === 'packageOverlay') closePackageModal();
+    if (id === 'partnersOverlay') closePartnersModal();
+  });
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closePasswordModal();
+    closeUsersModal();
+    closePackageModal();
+    closePartnersModal();
+  }
+});
+
+(async () => {
+  setTheme(theme);
+  setLang(lang);
+  await checkAuth();
+})();
+</script>
+</body>
+</html>
