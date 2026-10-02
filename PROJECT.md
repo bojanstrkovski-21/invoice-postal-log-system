@@ -38,6 +38,8 @@ First login: `admin` / `admin123`. Stop the old postal app first. It uses the sa
 ## Current State
 Phase 1 and Phase 2 are done. Login, landing page, partners, and the postal log work, including даночен број. The invoice book has a database table and a placeholder screen only.
 
+GitHub: https://github.com/bojanstrkovski-21/invoice-postal-log-system (`main`). `office.db` and the MIT license are in the repo.
+
 ## Next Steps
 1. Phase 3 — invoice add/edit/delete
 2. Auto internal number `05-X`, reset each year
@@ -46,4 +48,4 @@ Phase 1 and Phase 2 are done. Login, landing page, partners, and the postal log 
 5. Invoice search, filters, and CSV/Excel export
 
 ## Recent Work
-- 2026-10-02 — Foundation, postal module, tax number, and project memory
+- 2026-10-02 — Foundation, postal module, tax number, project memory, and GitHub repo on `main`

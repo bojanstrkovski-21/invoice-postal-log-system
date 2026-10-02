@@ -47,7 +47,9 @@ One local web app, one login, two books. Replaces the paper invoice book and the
 
 **Roles:** `admin` can edit/delete packages, delete partners, and manage users. `user` can add packages and add/edit partners. Edit/delete buttons are hidden for `user`.
 
-**Current status (2026-10-02):** Phase 1 and Phase 2 done. User tested login. Postal log is usable. Invoice entry is not built. No import from the old `pratki.db`.
+**GitHub:** https://github.com/bojanstrkovski-21/invoice-postal-log-system — branch `main`. `office.db` is committed. MIT license is in the repo root.
+
+**Current status (2026-10-02):** Phase 1 and Phase 2 done. User tested login. Postal log is usable. Invoice entry is not built. No import from the old `pratki.db`. Repo is pushed.
 
 **Decisions:**
 - Даночен број is on partners, packages, and invoices. The user asked for it on both books.
@@ -63,6 +65,8 @@ One local web app, one login, two books. Replaces the paper invoice book and the
 - The old postal app also binds to port 5000. Stop it before starting this one.
 - Restart the server after Python changes. The running process does not reload them.
 - Existing databases get new columns through `_add_column()` in `db.py`. Do not rely on `CREATE TABLE IF NOT EXISTS` to alter an old `office.db`.
+- `office.db` stays in git. Match the postal project: do not ignore database files.
+- GitHub default branch is `main`. Do not recreate `master`.
 
 **Why:** One login and one database for both paper books, without changing the postal workflow people already know.
 

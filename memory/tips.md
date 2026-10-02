@@ -7,3 +7,6 @@
 - Store dates as `yyyy-mm-dd` and show them as `dd.mm.yyyy`. Package types stay in Macedonian even when the UI language is English.
 - Даночен број on a package or invoice is a copy made at entry time. Editing the partner later must not silently change old rows.
 - `CREATE TABLE IF NOT EXISTS` does not add columns to an existing `office.db`. New columns need `_add_column()` in `db.py`.
+- Track `office.db` in git, the same way the postal project tracks `pratki.db`. Do not add `*.db` back to `.gitignore` unless the user asks.
+- The GitHub repo must use `main` as the default branch. A leftover `master` branch made the project look empty because GitHub opened that branch first.
+- `gh` login for this account is broken. `git push` through Git Credential Manager works. Do not treat a failed `gh auth status` as a failed push.
