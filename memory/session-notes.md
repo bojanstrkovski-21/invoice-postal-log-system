@@ -35,6 +35,19 @@
 - Restart the server before testing. Do not import `pratki.db` unless asked.
 
 ### Follow-up the same day
+- User signed in and confirmed the app runs.
 - Removed CSV export buttons. Both books export Excel only.
 - Removed the navbar password button for every role.
 - Admin can edit any user from Корисници: username, role, and password. Blank password keeps the old one. The last admin cannot be deleted or demoted.
+- Added root `README.md`, `push.sh`, and `set-git-cred.sh`. The scripts were not run.
+- A commit and push was requested, then the command was denied. Nothing from this session is on GitHub. `origin/main` is still `9e0d977`.
+- Remote is still HTTPS. Do not switch it to SSH unless the user runs `set-git-cred.sh`.
+
+### Left uncommitted
+- Invoice book, user editing, Excel-only export, README, and the two Git scripts
+- `office.db` has the new empty `supplier_name` column. No invoice rows were added.
+- `office-log-system/.venv` is local and ignored
+
+### Next
+- User can push with `./push.sh "commit message"` when they want. Do not change the remote first.
+- Phase 4: polish, Windows test, backup notes. Do not import `pratki.db` unless asked.

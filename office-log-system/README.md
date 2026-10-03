@@ -5,7 +5,7 @@ One local web app, one login, two modules:
 - **Книга за пошта / Postal Log** — outgoing packages
 - **Влезни фактури / Incoming Invoices** — received invoices
 
-Both books are working: add, edit, delete, search, year and date filters, table and grouped view, CSV/Excel export.
+Both books are working: add, edit, delete, search, year and date filters, table and grouped view, and Excel export.
 
 Даночен број is stored on partners, on each package, and on each invoice. Invoice numbers use `05-1`, `05-2`, and start again each year.
 
@@ -26,7 +26,7 @@ Then open [http://localhost:5000](http://localhost:5000).
 
 **Windows:** double-click `start.bat`.
 
-Default admin on first run: `admin` / `admin123`. Change it after login.
+Default admin on first run: `admin` / `admin123`. An admin changes usernames, roles, and passwords from Корисници.
 
 The older postal app also uses port 5000. Stop that one before starting this app.
 

@@ -10,3 +10,5 @@
 - Track `office.db` in git, the same way the postal project tracks `pratki.db`. Do not add `*.db` back to `.gitignore` unless the user asks.
 - The GitHub repo must use `main` as the default branch. A leftover `master` branch made the project look empty because GitHub opened that branch first.
 - `gh` login for this account is broken. `git push` through Git Credential Manager works. Do not treat a failed `gh auth status` as a failed push.
+- To publish this repo, use `./push.sh "commit message"`. Leave origin on HTTPS. `set-git-cred.sh` switches it to SSH and should not be run unless asked.
+- Session 2 was closed with the invoice book, user editing, README, and Git scripts still uncommitted. Do not assume GitHub has them.

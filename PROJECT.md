@@ -38,7 +38,7 @@ First login: `admin` / `admin123`. Stop the old postal app first. It uses the sa
 ## Current State
 Phase 1, Phase 2, and Phase 3 are done. Login, landing page, partners, the postal log, and the incoming invoice book work, including даночен број.
 
-GitHub: https://github.com/bojanstrkovski-21/invoice-postal-log-system (`main`). `office.db` and the MIT license are in the repo.
+GitHub: https://github.com/bojanstrkovski-21/invoice-postal-log-system (`main`). The invoice book, user editing, root README, and Git scripts are local only. Last pushed commit is `9e0d977`.
 
 ## Next Steps
 1. Phase 4 — consistent polish between the two books
@@ -48,4 +48,4 @@ GitHub: https://github.com/bojanstrkovski-21/invoice-postal-log-system (`main`).
 
 ## Recent Work
 - 2026-10-02 — Foundation, postal module, tax number, project memory, and GitHub repo on `main`
-- 2026-10-02 — Phase 3 invoice book: add/edit/delete, yearly `05-X`, payment status, search, and CSV/Excel export
+- 2026-10-02 — Phase 3 invoice book, Excel-only export, admin user editing, root README, and Git scripts. Not pushed. Session closed.

@@ -7,7 +7,9 @@ metadata:
 
 One local web app, one login, two books. Replaces the paper invoice book and the separate postal app.
 
-**Location:** `d:\My Backups\kniga na vlezni fakturi\office-log-system\`
+**Location on this Linux machine:** `/home/bojan/Data/invoice-postal-log-system/`
+
+**Older Windows location:** `d:\My Backups\kniga na vlezni fakturi\office-log-system\`
 
 **Source papers and build plan:** `d:\My Backups\kniga na vlezni fakturi\references\`
 
@@ -52,9 +54,9 @@ One local web app, one login, two books. Replaces the paper invoice book and the
 
 **Roles:** `admin` can edit/delete packages and invoices, delete partners, and manage users from Корисници. That screen can rename a user, change the role, and set a password. A blank password keeps the old one. The last admin cannot be deleted or demoted. `user` can add packages and invoices, and add/edit partners. Edit/delete buttons are hidden for `user`. There is no password button in the navbar.
 
-**GitHub:** https://github.com/bojanstrkovski-21/invoice-postal-log-system — branch `main`. `office.db` is committed. MIT license is in the repo root.
+**GitHub:** https://github.com/bojanstrkovski-21/invoice-postal-log-system — branch `main`. Remote is HTTPS. `office.db` is tracked. MIT license and a root `README.md` are in the repo. `push.sh` commits everything and pushes `main`. `set-git-cred.sh` would switch origin to SSH; do not run it unless asked.
 
-**Current status (2026-10-02):** Phase 1, Phase 2, and Phase 3 done. User tested login. Postal log and invoice entry are usable. No import from the old `pratki.db`. Repo was pushed before the invoice book.
+**Current status (2026-10-02, session closed):** Phase 1, Phase 2, and Phase 3 are done locally. User signed in after the invoice book was added. Postal log and invoice entry are usable. Excel export only. No navbar password button. Admin user editing is in Корисници. No import from the old `pratki.db`. GitHub `main` does not yet have this session. Last pushed commit is `9e0d977`.
 
 **Decisions:**
 - Даночен број is on partners, packages, and invoices. The user asked for it on both books.
@@ -67,7 +69,9 @@ One local web app, one login, two books. Replaces the paper invoice book and the
 - Dates display as `dd.mm.yyyy`. The database stores `yyyy-mm-dd`. Date fields are a text input with auto-inserted dots plus a calendar button. `lang="mk"` alone was not reliable.
 - Package types stay Macedonian even when the UI is English.
 - All UI stays in `static/index.html`. No build step.
-- Default admin on first run: `admin` / `admin123`. Change it after login.
+- Default admin on first run: `admin` / `admin123`. Change the password from Корисници, not from a navbar button.
+- Screen export is Excel only. Do not put the CSV button back unless asked.
+- Linux installs go in `office-log-system/.venv`. Do not use system `pip`.
 - The old postal app also binds to port 5000. Stop it before starting this one.
 - Restart the server after Python changes. The running process does not reload them.
 - Existing databases get new columns through `_add_column()` in `db.py`. Do not rely on `CREATE TABLE IF NOT EXISTS` to alter an old `office.db`.
