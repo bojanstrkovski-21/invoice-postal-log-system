@@ -42,6 +42,8 @@ The database file is `office-log-system/office.db`. Copy that file to back up th
 
 ## Git
 
+**Linux:**
+
 ```bash
 ./push.sh "commit message"
 ```
