@@ -1,4 +1,5 @@
 import os
+import secrets
 import sqlite3
 
 from flask import Flask, jsonify, request, send_from_directory, session
@@ -10,7 +11,7 @@ from invoices.routes import invoices_bp
 from postal.routes import postal_bp
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'office-log-secret-2026')
+app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
 app.register_blueprint(postal_bp)
 app.register_blueprint(invoices_bp)
 

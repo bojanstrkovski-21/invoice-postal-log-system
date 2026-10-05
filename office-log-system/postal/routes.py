@@ -1,10 +1,9 @@
 import csv
 import io
 
-from flask import Blueprint, current_app, jsonify, request
-
 from auth import admin_required, login_required
 from db import get_db
+from flask import Blueprint, current_app, jsonify, request
 
 postal_bp = Blueprint('postal', __name__, url_prefix='/api/postal')
 
@@ -117,8 +116,8 @@ def get_packages():
 def create_package():
     data = request.get_json(silent=True) or {}
     values, error = _parse_package(data)
-    if error:
-        return jsonify({'error': error}), 400
+    if error or values is None:
+        return jsonify({'error': error or 'Invalid package'}), 400
     db = get_db()
     cur = db.execute(
         '''INSERT INTO packages (
@@ -137,8 +136,8 @@ def create_package():
 def update_package(pkg_id):
     data = request.get_json(silent=True) or {}
     values, error = _parse_package(data)
-    if error:
-        return jsonify({'error': error}), 400
+    if error or values is None:
+        return jsonify({'error': error or 'Invalid package'}), 400
     db = get_db()
     existing = db.execute('SELECT id FROM packages WHERE id = ?', (pkg_id,)).fetchone()
     if not existing:
@@ -195,6 +194,8 @@ def export_packages():
             return jsonify({'error': 'openpyxl not installed'}), 500
         wb = openpyxl.Workbook()
         ws = wb.active
+        if ws is None:
+            ws = wb.create_sheet('Пратки')
         ws.title = 'Пратки'
         ws.append(headers)
         for cell in ws[1]:

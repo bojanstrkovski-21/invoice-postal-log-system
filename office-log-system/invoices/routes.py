@@ -1,12 +1,11 @@
 import csv
 import io
 import sqlite3
-from datetime import date, datetime
-
-from flask import Blueprint, current_app, jsonify, request
+from datetime import date, datetime, timezone
 
 from auth import admin_required, login_required
 from db import get_db
+from flask import Blueprint, current_app, jsonify, request
 from nbrm import NbrmError, lookup_rate
 
 invoices_bp = Blueprint('invoices', __name__, url_prefix='/api/invoices')
@@ -46,7 +45,7 @@ def _date(value, required=False):
             return None, 'Date is required'
         return None, None
     try:
-        datetime.strptime(text, '%Y-%m-%d')
+        date.fromisoformat(text)
     except ValueError:
         return None, 'Invalid date'
     return text, None
@@ -172,8 +171,8 @@ def _parse_invoice(data):
     if error:
         return None, error
     due_date, error = _date(data.get('due_date'))
-    if error:
-        return None, error
+    if error or not received_date:
+        return None, error or 'Date is required'
     supplier_name = _clean(data.get('supplier_name'))
     if not supplier_name:
         return None, 'Supplier is required'
@@ -273,7 +272,7 @@ def next_number():
     elif year_arg.isdigit():
         year = int(year_arg)
     else:
-        year = date.today().year
+        year = datetime.now(timezone.utc).astimezone().year
     return jsonify({
         'year': year,
         'internal_number': next_internal_number(get_db(), year),
@@ -340,8 +339,8 @@ def get_invoices():
 def create_invoice():
     data = request.get_json(silent=True) or {}
     parsed, error = _parse_invoice(data)
-    if error:
-        return jsonify({'error': error}), 400
+    if error or parsed is None:
+        return jsonify({'error': error or 'Invalid invoice'}), 400
     apply_exchange(parsed)
     db = get_db()
     db.execute('BEGIN IMMEDIATE')
@@ -369,8 +368,8 @@ def create_invoice():
 def update_invoice(invoice_id):
     data = request.get_json(silent=True) or {}
     parsed, error = _parse_invoice(data)
-    if error:
-        return jsonify({'error': error}), 400
+    if error or parsed is None:
+        return jsonify({'error': error or 'Invalid invoice'}), 400
     if not parsed['internal_number']:
         return jsonify({'error': 'Internal number is required'}), 400
     apply_exchange(parsed)
@@ -452,6 +451,8 @@ def export_invoices():
             return jsonify({'error': 'openpyxl not installed'}), 500
         wb = openpyxl.Workbook()
         ws = wb.active
+        if ws is None:
+            ws = wb.create_sheet('Фактури')
         ws.title = 'Фактури'
         ws.append(headers)
         for cell in ws[1]:

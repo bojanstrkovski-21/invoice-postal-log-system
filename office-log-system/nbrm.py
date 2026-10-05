@@ -1,5 +1,5 @@
 import xml.etree.ElementTree as ET
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
@@ -13,7 +13,7 @@ class NbrmError(Exception):
 
 
 def _window(iso_date):
-    day = datetime.strptime(iso_date, '%Y-%m-%d')
+    day = date.fromisoformat(iso_date)
     start = day - timedelta(days=10)
     return start.strftime('%d.%m.%Y'), day.strftime('%d.%m.%Y')
 
@@ -22,7 +22,7 @@ def _load(iso_date, force=False):
     start, end = _window(iso_date)
     key = (start, end)
     cached = _cache.get(key)
-    if not force and cached and datetime.now().timestamp() - cached['at'] < 3600:
+    if not force and cached and datetime.now(timezone.utc).timestamp() - cached['at'] < 3600:
         return cached['rows']
     url = f'{NBRM_URL}?StartDate={start}&EndDate={end}'
     request = Request(url, headers={'User-Agent': 'office-log'})
@@ -57,7 +57,7 @@ def _load(iso_date, force=False):
             'nomin': nomin,
             'list_date': list_day,
         })
-    _cache[key] = {'at': datetime.now().timestamp(), 'rows': rows}
+    _cache[key] = {'at': datetime.now(timezone.utc).timestamp(), 'rows': rows}
     return rows
 
 

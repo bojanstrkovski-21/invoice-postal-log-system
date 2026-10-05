@@ -1881,10 +1881,26 @@ async function deletePackage(id) {
   await loadPostal();
 }
 
+async function downloadExport(url, filename) {
+  const res = await fetch(url);
+  if (res.status === 401) {
+    currentUser = null;
+    showLogin();
+    return;
+  }
+  if (!res.ok) return;
+  const blob = await res.blob();
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
 function exportPostal(fmt) {
   const p = postalParams();
   p.set('format', fmt);
-  window.location.href = '/api/postal/export?' + p;
+  downloadExport('/api/postal/export?' + p, fmt === 'csv' ? 'pratki.csv' : 'pratki.xlsx');
 }
 
 function resetPartnerForm() {
@@ -2428,8 +2444,13 @@ async function deleteInvoice(id) {
 function exportInvoices(fmt) {
   const p = invoiceParams();
   p.set('format', fmt);
-  window.location.href = '/api/invoices/export?' + p;
+  downloadExport('/api/invoices/export?' + p, fmt === 'csv' ? 'fakturi.csv' : 'fakturi.xlsx');
 }
+
+window.addEventListener('pagehide', () => {
+  if (!currentUser) return;
+  navigator.sendBeacon('/api/logout');
+});
 
 ['usersOverlay', 'packageOverlay', 'partnersOverlay', 'invoiceOverlay'].forEach(id => {
   document.getElementById(id).addEventListener('click', e => {
