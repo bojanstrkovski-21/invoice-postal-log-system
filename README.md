@@ -46,6 +46,12 @@ The database file is `office-log-system/office.db`. Copy that file to back up th
 ./push.sh "commit message"
 ```
 
+**Windows:**
+
+```powershell
+.\push.ps1 "commit message"
+```
+
 `set-git-cred.sh` sets the Git name, email, and an SSH remote. The current remote is HTTPS. Run that script only if GitHub SSH already works on this computer.
 
 ## License

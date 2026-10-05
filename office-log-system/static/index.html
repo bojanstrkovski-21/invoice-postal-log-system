@@ -263,6 +263,35 @@
     .date-wrap input[type="date"] {
       position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0;
     }
+    .app-cal {
+      position: fixed; z-index: 500; width: 280px;
+      background: var(--card); color: var(--text);
+      border: 1px solid var(--border); border-radius: 12px;
+      box-shadow: var(--shadow-lg); padding: 10px;
+    }
+    .app-cal-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 8px; }
+    .app-cal-title { font-weight: 700; font-size: 14px; text-align: center; flex: 1; }
+    .app-cal-nav {
+      width: 28px; height: 28px; border-radius: 7px;
+      border: 1px solid var(--border); background: var(--card);
+      color: var(--text); cursor: pointer; font-size: 18px; line-height: 1;
+    }
+    .app-cal-nav:hover { background: var(--hover-bg); }
+    .app-cal-week, .app-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+    .app-cal-week span {
+      text-align: center; font-size: 10px; font-weight: 700;
+      color: var(--muted); padding: 4px 0;
+    }
+    .app-cal-day {
+      border: none; background: transparent; color: var(--text);
+      border-radius: 7px; height: 32px; cursor: pointer;
+      font-family: inherit; font-size: 13px;
+    }
+    .app-cal-day:hover { background: var(--hover-bg); }
+    .app-cal-day.muted { color: var(--muted); }
+    .app-cal-day.today { box-shadow: inset 0 0 0 1px var(--primary); }
+    .app-cal-day.selected, .app-cal-day.selected:hover { background: var(--primary); color: #fff; }
+    .app-cal-foot { display: flex; justify-content: space-between; margin-top: 8px; }
     .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .required-star { color: var(--danger); }
     .group-list { display: flex; flex-direction: column; gap: 8px; }
@@ -303,6 +332,7 @@
     td.amount { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
     .form-row-3 { display: grid; grid-template-columns: 1.2fr 0.7fr 1fr; gap: 12px; }
     #invSearchInput { min-width: 220px; }
+    #iAmountMkd { font-weight: 700; background: var(--card-alt); }
 
     #loginScreen {
       position: fixed; inset: 0; z-index: 400;
@@ -502,7 +532,7 @@
         <span class="filter-label" id="lblDateFrom">Од датум</span>
         <div class="date-wrap">
           <input type="text" id="dateFromTxt" placeholder="dd.mm.yyyy" maxlength="10" oninput="onDateType('dateFromTxt','dateFrom',loadPostal)">
-          <button type="button" class="cal-btn" onclick="triggerPicker('dateFrom')">▦</button>
+          <button type="button" class="cal-btn" onclick="openCalendar(event,'dateFrom','dateFromTxt',loadPostal)">▦</button>
           <input type="date" id="dateFrom" onchange="onDatePick('dateFrom','dateFromTxt');loadPostal()">
         </div>
       </div>
@@ -510,7 +540,7 @@
         <span class="filter-label" id="lblDateTo">До датум</span>
         <div class="date-wrap">
           <input type="text" id="dateToTxt" placeholder="dd.mm.yyyy" maxlength="10" oninput="onDateType('dateToTxt','dateTo',loadPostal)">
-          <button type="button" class="cal-btn" onclick="triggerPicker('dateTo')">▦</button>
+          <button type="button" class="cal-btn" onclick="openCalendar(event,'dateTo','dateToTxt',loadPostal)">▦</button>
           <input type="date" id="dateTo" onchange="onDatePick('dateTo','dateToTxt');loadPostal()">
         </div>
       </div>
@@ -555,7 +585,7 @@
         <span class="filter-label" id="lblInvDateFrom">Од датум</span>
         <div class="date-wrap">
           <input type="text" id="invDateFromTxt" placeholder="dd.mm.yyyy" maxlength="10" oninput="onDateType('invDateFromTxt','invDateFrom',loadInvoices)">
-          <button type="button" class="cal-btn" onclick="triggerPicker('invDateFrom')">▦</button>
+          <button type="button" class="cal-btn" onclick="openCalendar(event,'invDateFrom','invDateFromTxt',loadInvoices)">▦</button>
           <input type="date" id="invDateFrom" onchange="onDatePick('invDateFrom','invDateFromTxt');loadInvoices()">
         </div>
       </div>
@@ -563,7 +593,7 @@
         <span class="filter-label" id="lblInvDateTo">До датум</span>
         <div class="date-wrap">
           <input type="text" id="invDateToTxt" placeholder="dd.mm.yyyy" maxlength="10" oninput="onDateType('invDateToTxt','invDateTo',loadInvoices)">
-          <button type="button" class="cal-btn" onclick="triggerPicker('invDateTo')">▦</button>
+          <button type="button" class="cal-btn" onclick="openCalendar(event,'invDateTo','invDateToTxt',loadInvoices)">▦</button>
           <input type="date" id="invDateTo" onchange="onDatePick('invDateTo','invDateToTxt');loadInvoices()">
         </div>
       </div>
@@ -602,7 +632,7 @@
           <label id="lSendDate">Датум <span class="required-star">*</span></label>
           <div class="date-wrap">
             <input type="text" id="fSendDateTxt" placeholder="dd.mm.yyyy" maxlength="10" oninput="onDateType('fSendDateTxt','fSendDate')">
-            <button type="button" class="cal-btn" onclick="triggerPicker('fSendDate')">▦</button>
+            <button type="button" class="cal-btn" onclick="openCalendar(event,'fSendDate','fSendDateTxt')">▦</button>
             <input type="date" id="fSendDate" onchange="onDatePick('fSendDate','fSendDateTxt')">
           </div>
         </div>
@@ -665,7 +695,7 @@
           <label id="lInvReceived">Датум на прием <span class="required-star">*</span></label>
           <div class="date-wrap">
             <input type="text" id="iReceivedTxt" placeholder="dd.mm.yyyy" maxlength="10" oninput="onDateType('iReceivedTxt','iReceived', onInvoiceReceivedChange)">
-            <button type="button" class="cal-btn" onclick="triggerPicker('iReceived')">▦</button>
+            <button type="button" class="cal-btn" onclick="openCalendar(event,'iReceived','iReceivedTxt',onInvoiceReceivedChange)">▦</button>
             <input type="date" id="iReceived" onchange="onDatePick('iReceived','iReceivedTxt'); onInvoiceReceivedChange()">
           </div>
         </div>
@@ -694,7 +724,7 @@
           <label id="lInvDate">Датум на фактура</label>
           <div class="date-wrap">
             <input type="text" id="iInvoiceDateTxt" placeholder="dd.mm.yyyy" maxlength="10" oninput="onDateType('iInvoiceDateTxt','iInvoiceDate')">
-            <button type="button" class="cal-btn" onclick="triggerPicker('iInvoiceDate')">▦</button>
+            <button type="button" class="cal-btn" onclick="openCalendar(event,'iInvoiceDate','iInvoiceDateTxt')">▦</button>
             <input type="date" id="iInvoiceDate" onchange="onDatePick('iInvoiceDate','iInvoiceDateTxt')">
           </div>
         </div>
@@ -702,24 +732,34 @@
           <label id="lInvDue">Рок на плаќање</label>
           <div class="date-wrap">
             <input type="text" id="iDueTxt" placeholder="dd.mm.yyyy" maxlength="10" oninput="onDateType('iDueTxt','iDue')">
-            <button type="button" class="cal-btn" onclick="triggerPicker('iDue')">▦</button>
+            <button type="button" class="cal-btn" onclick="openCalendar(event,'iDue','iDueTxt')">▦</button>
             <input type="date" id="iDue" onchange="onDatePick('iDue','iDueTxt')">
           </div>
         </div>
       </div>
-      <div class="form-row-3">
+      <div class="form-row-2">
         <div class="form-group">
           <label id="lInvAmount">Износ</label>
-          <input type="text" id="iAmount" inputmode="decimal" placeholder="0,00">
+          <input type="text" id="iAmount" inputmode="decimal" placeholder="2.360,00" onkeydown="onAmountKey(event)" oninput="formatMoneyInput(this); updateMkdPreview()">
+          <div id="mkdAmountGroup" class="form-group hidden" style="margin-top:10px">
+            <label id="lInvAmountMkd">Денари</label>
+            <input type="text" id="iAmountMkd" readonly tabindex="-1">
+          </div>
         </div>
         <div class="form-group">
           <label id="lInvCurrency">Валута</label>
-          <input type="text" id="iCurrency" value="MKD" maxlength="8">
+          <select id="iCurrency" onchange="refreshRate()">
+            <option value="MKD">MKD</option>
+            <option value="EUR">EUR</option>
+            <option value="USD">USD</option>
+          </select>
+          <span class="hint" id="iRateHint"></span>
+          <button type="button" class="btn btn-secondary btn-sm" id="btnRefreshRate" onclick="refreshRate(true)"></button>
         </div>
-        <div class="form-group">
-          <label id="lInvAccount">Сметка</label>
-          <input type="text" id="iAccount" placeholder="903">
-        </div>
+      </div>
+      <div class="form-group">
+        <label id="lInvAccount">Сметка</label>
+        <select id="iAccount"></select>
       </div>
       <div class="form-group">
         <label id="lInvStatus">Статус</label>
@@ -838,6 +878,20 @@
   </div>
 </div>
 
+<div id="appCalendar" class="app-cal hidden" role="dialog" aria-label="Calendar">
+  <div class="app-cal-head">
+    <button type="button" class="app-cal-nav" onclick="shiftCalendar(-1)" aria-label="Previous">‹</button>
+    <div class="app-cal-title" id="calTitle"></div>
+    <button type="button" class="app-cal-nav" onclick="shiftCalendar(1)" aria-label="Next">›</button>
+  </div>
+  <div class="app-cal-week" id="calWeek"></div>
+  <div class="app-cal-grid" id="calGrid"></div>
+  <div class="app-cal-foot">
+    <button type="button" class="btn btn-ghost btn-sm" id="calClear" onclick="pickCalendar('')"></button>
+    <button type="button" class="btn btn-secondary btn-sm" id="calToday" onclick="pickToday()"></button>
+  </div>
+</div>
+
 <script>
 const S = {
   mk: {
@@ -906,6 +960,7 @@ const S = {
     invDue: 'Рок на плаќање',
     invSupplier: 'Назив',
     invAmount: 'Износ',
+    invMkd: 'Во денари',
     invCurrency: 'Валута',
     invAccount: 'Сметка',
     invStatus: 'Статус',
@@ -1005,6 +1060,7 @@ const S = {
     invDue: 'Due date',
     invSupplier: 'Name',
     invAmount: 'Amount',
+    invMkd: 'In denars',
     invCurrency: 'Currency',
     invAccount: 'Account',
     invStatus: 'Status',
@@ -1060,6 +1116,7 @@ let theme = localStorage.getItem('theme') || 'light';
 let view = sessionStorage.getItem('view') || 'home';
 let postalView = localStorage.getItem('postalView') || 'table';
 let invoiceView = localStorage.getItem('invoiceView') || 'table';
+let invoiceRate = null;
 let currentUser = null;
 let packages = [];
 let invoices = [];
@@ -1183,7 +1240,9 @@ function applyLang() {
   document.getElementById('lInvDate').textContent = s.invDate;
   document.getElementById('lInvDue').textContent = s.invDue;
   document.getElementById('lInvAmount').textContent = s.invAmount;
+  document.getElementById('lInvAmountMkd').textContent = lang === 'en' ? 'Denars' : 'Денари';
   document.getElementById('lInvCurrency').textContent = s.invCurrency;
+  document.getElementById('btnRefreshRate').textContent = lang === 'en' ? 'Refresh rate' : 'Освежи курс';
   document.getElementById('lInvAccount').textContent = s.invAccount;
   document.getElementById('lInvStatus').textContent = s.invStatus;
   document.getElementById('optIPending').textContent = s.statusPending;
@@ -1209,6 +1268,10 @@ function applyLang() {
   applyViewChrome();
   if (currentUser && view === 'postal') renderPostal();
   if (currentUser && view === 'invoices') renderInvoices();
+  if (document.getElementById('invoiceOverlay').classList.contains('open')) {
+    fillAccountSelect(document.getElementById('iAccount').value);
+  }
+  if (calState) renderCalendar();
   if (document.getElementById('usersOverlay').classList.contains('open')) loadUsersTable();
 }
 
@@ -1427,10 +1490,139 @@ function onDateType(txtId, dateId, onComplete) {
   if (m && onComplete) onComplete();
 }
 
-function triggerPicker(id) {
-  const el = document.getElementById(id);
-  try { el.showPicker(); } catch (e) { el.focus(); }
+const CAL_MONTHS = {
+  mk: ['јануари', 'февруари', 'март', 'април', 'мај', 'јуни', 'јули', 'август', 'септември', 'октомври', 'ноември', 'декември'],
+  en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+};
+const CAL_DAYS = {
+  mk: ['П', 'В', 'С', 'Ч', 'П', 'С', 'Н'],
+  en: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+};
+const ACCOUNTS = [
+  { code: '787', mk: '787 — сметка за самофинансирачки активности', en: '787 — self-financing activities' },
+  { code: '903', mk: '903 — сметка за наменска дотација', en: '903 — earmarked subsidy' },
+  { code: '785', mk: '785 — донаторски сметки', en: '785 — donor accounts' }
+];
+let calState = null;
+
+function accountLabel(code) {
+  if (!code) return '';
+  const item = ACCOUNTS.find(a => a.code === code);
+  if (!item) return code;
+  return lang === 'en' ? item.en : item.mk;
 }
+
+function fillAccountSelect(selected) {
+  const sel = document.getElementById('iAccount');
+  const extra = selected && !ACCOUNTS.some(a => a.code === selected)
+    ? `<option value="${esc(selected)}">${esc(selected)}</option>` : '';
+  sel.innerHTML = `<option value="">—</option>` +
+    ACCOUNTS.map(a => `<option value="${a.code}">${esc(lang === 'en' ? a.en : a.mk)}</option>`).join('') +
+    extra;
+  sel.value = selected || '';
+}
+
+function openCalendar(event, dateId, txtId, onDone) {
+  event.preventDefault();
+  event.stopPropagation();
+  const popup = document.getElementById('appCalendar');
+  if (calState && calState.dateId === dateId && !popup.classList.contains('hidden')) {
+    closeCalendar();
+    return;
+  }
+  const current = document.getElementById(dateId).value;
+  const base = current ? new Date(current + 'T12:00:00') : new Date();
+  calState = {
+    dateId, txtId, onDone,
+    year: base.getFullYear(),
+    month: base.getMonth(),
+    selected: current || ''
+  };
+  renderCalendar();
+  popup.classList.remove('hidden');
+  positionCalendar(event.currentTarget);
+}
+
+function positionCalendar(anchor) {
+  const popup = document.getElementById('appCalendar');
+  const rect = anchor.getBoundingClientRect();
+  const width = popup.offsetWidth || 280;
+  const height = popup.offsetHeight || 320;
+  let left = Math.min(rect.left, window.innerWidth - width - 8);
+  left = Math.max(8, left);
+  let top = rect.bottom + 6;
+  if (top + height > window.innerHeight - 8) top = Math.max(8, rect.top - height - 6);
+  popup.style.left = left + 'px';
+  popup.style.top = top + 'px';
+}
+
+function closeCalendar() {
+  document.getElementById('appCalendar').classList.add('hidden');
+  calState = null;
+}
+
+function shiftCalendar(step) {
+  if (!calState) return;
+  const next = new Date(calState.year, calState.month + step, 1);
+  calState.year = next.getFullYear();
+  calState.month = next.getMonth();
+  renderCalendar();
+}
+
+function renderCalendar() {
+  if (!calState) return;
+  const months = CAL_MONTHS[lang] || CAL_MONTHS.mk;
+  const days = CAL_DAYS[lang] || CAL_DAYS.mk;
+  document.getElementById('calTitle').textContent = months[calState.month] + ' ' + calState.year;
+  document.getElementById('calWeek').innerHTML = days.map(d => `<span>${d}</span>`).join('');
+  document.getElementById('calClear').textContent = lang === 'en' ? 'Clear' : 'Избриши';
+  document.getElementById('calToday').textContent = lang === 'en' ? 'Today' : 'Денес';
+  const first = new Date(calState.year, calState.month, 1);
+  const start = (first.getDay() + 6) % 7;
+  const today = new Date();
+  const todayIso = today.getFullYear() + '-' +
+    String(today.getMonth() + 1).padStart(2, '0') + '-' +
+    String(today.getDate()).padStart(2, '0');
+  let html = '';
+  for (let i = 0; i < 42; i++) {
+    const day = new Date(calState.year, calState.month, 1 - start + i);
+    const iso = day.getFullYear() + '-' +
+      String(day.getMonth() + 1).padStart(2, '0') + '-' +
+      String(day.getDate()).padStart(2, '0');
+    const classes = ['app-cal-day'];
+    if (day.getMonth() !== calState.month) classes.push('muted');
+    if (iso === todayIso) classes.push('today');
+    if (iso === calState.selected) classes.push('selected');
+    html += `<button type="button" class="${classes.join(' ')}" data-iso="${iso}">${day.getDate()}</button>`;
+  }
+  document.getElementById('calGrid').innerHTML = html;
+}
+
+function pickCalendar(iso) {
+  if (!calState) return;
+  const { dateId, txtId, onDone } = calState;
+  document.getElementById(dateId).value = iso;
+  document.getElementById(txtId).value = fmtDate(iso);
+  closeCalendar();
+  if (onDone) onDone();
+}
+
+function pickToday() {
+  const today = new Date();
+  pickCalendar(today.getFullYear() + '-' +
+    String(today.getMonth() + 1).padStart(2, '0') + '-' +
+    String(today.getDate()).padStart(2, '0'));
+}
+
+document.getElementById('calGrid').addEventListener('click', e => {
+  const btn = e.target.closest('[data-iso]');
+  if (btn) pickCalendar(btn.dataset.iso);
+});
+document.addEventListener('click', e => {
+  if (!calState) return;
+  if (e.target.closest('#appCalendar') || e.target.closest('.cal-btn')) return;
+  closeCalendar();
+});
 
 function typeLabel(mkType) {
   const i = MK_TYPES.indexOf(mkType);
@@ -1791,10 +1983,78 @@ function fmtAmount(value) {
   if (value == null || value === '') return '';
   const n = Number(value);
   if (Number.isNaN(n)) return String(value);
-  return n.toLocaleString(lang === 'mk' ? 'mk-MK' : 'en-GB', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
+  const negative = n < 0;
+  const [whole, frac] = Math.abs(n).toFixed(2).split('.');
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return (negative ? '-' : '') + grouped + ',' + frac;
+}
+
+function placeAmountCaret(el) {
+  if (document.activeElement !== el) return;
+  if (el.dataset.decimals == null) {
+    const commaAt = el.value.lastIndexOf(',');
+    el.setSelectionRange(commaAt, commaAt);
+    return;
+  }
+  const pos = el.value.lastIndexOf(',') + 1 + el.dataset.decimals.length;
+  el.setSelectionRange(pos, pos);
+}
+
+function onAmountKey(event) {
+  const el = event.target;
+  if (event.key === ',' || event.key === '.') {
+    event.preventDefault();
+    if (el.dataset.decimals == null) {
+      const commaAt = el.value.lastIndexOf(',');
+      const existing = commaAt === -1 ? '' : el.value.slice(commaAt + 1).replace(/\D/g, '').slice(0, 2);
+      el.dataset.decimals = existing === '00' ? '' : existing;
+    }
+    formatMoneyInput(el);
+    placeAmountCaret(el);
+    updateMkdPreview();
+    return;
+  }
+  if (event.key >= '0' && event.key <= '9') {
+    const commaAt = el.value.lastIndexOf(',');
+    if (el.dataset.decimals == null && commaAt !== -1 && el.selectionStart > commaAt) {
+      const existing = el.value.slice(commaAt + 1).replace(/\D/g, '').slice(0, 2);
+      el.dataset.decimals = existing === '00' ? '' : existing;
+    }
+    if (el.dataset.decimals == null) return;
+    event.preventDefault();
+    if (el.dataset.decimals.length < 2) el.dataset.decimals += event.key;
+    formatMoneyInput(el);
+    placeAmountCaret(el);
+    updateMkdPreview();
+    return;
+  }
+  if (event.key === 'Backspace') {
+    const commaAt = el.value.lastIndexOf(',');
+    if (commaAt !== -1 && el.selectionStart > commaAt) {
+      event.preventDefault();
+      el.dataset.decimals = el.dataset.decimals.slice(0, -1);
+      formatMoneyInput(el);
+      placeAmountCaret(el);
+      updateMkdPreview();
+    }
+  }
+}
+
+function formatMoneyInput(el) {
+  const decimalMode = el.dataset.decimals != null;
+  const commaAt = el.value.lastIndexOf(',');
+  let intDigits = (commaAt === -1 ? el.value : el.value.slice(0, commaAt)).replace(/\D/g, '');
+  intDigits = intDigits.replace(/^0+(?=\d)/, '');
+  if (!intDigits && !decimalMode) {
+    el.value = '';
+    delete el.dataset.decimals;
+    return;
+  }
+  const whole = (intDigits || '0').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const typed = decimalMode ? el.dataset.decimals : '';
+  const frac = (decimalMode ? typed : '00').padEnd(2, '0').slice(0, 2);
+  el.value = whole + ',' + frac;
+  placeAmountCaret(el);
 }
 
 function invoiceParams() {
@@ -1883,8 +2143,9 @@ function renderInvoiceTable() {
       <td class="date-cell col-inv-extra">${esc(fmtDate(inv.invoice_date))}</td>
       <td><strong>${esc(inv.supplier_name)}</strong></td>
       <td>${esc(inv.tax_number)}</td>
-      <td class="amount">${esc(fmtAmount(inv.amount))}</td>
-      <td>${esc(inv.bank_account)}</td>
+      <td class="amount">${esc(fmtAmount(inv.amount))}${inv.currency && inv.currency !== 'MKD' ? ' ' + esc(inv.currency) : ''}</td>
+      <td class="amount">${esc(fmtAmount(inv.amount_mkd))}</td>
+      <td>${esc(accountLabel(inv.bank_account))}</td>
       <td class="date-cell">${esc(fmtDate(inv.received_date))}</td>
       <td>${invoiceStatusCell(inv.payment_status)}</td>
       <td>${invoiceActionButtons(inv.id)}</td>
@@ -1893,7 +2154,7 @@ function renderInvoiceTable() {
     <thead><tr>
       <th>#</th><th>${esc(s.invInternal)}</th><th>${esc(s.invNumber)}</th>
       <th class="col-inv-extra">${esc(s.invDate)}</th><th>${esc(s.invSupplier)}</th>
-      <th>${esc(s.tax)}</th><th>${esc(s.invAmount)}</th><th>${esc(s.invAccount)}</th>
+      <th>${esc(s.tax)}</th><th>${esc(s.invAmount)}</th><th>${esc(s.invMkd)}</th><th>${esc(s.invAccount)}</th>
       <th>${esc(s.invReceived)}</th><th>${esc(s.invStatus)}</th><th></th>
     </tr></thead>
     <tbody>${rows}</tbody>
@@ -1922,8 +2183,9 @@ function renderInvoiceGroup() {
         <td class="date-cell">${esc(fmtDate(inv.received_date))}</td>
         <td class="ref-cell">${esc(inv.internal_number)}</td>
         <td>${esc(inv.invoice_number)}</td>
-        <td class="amount">${esc(fmtAmount(inv.amount))}</td>
-        <td>${esc(inv.bank_account)}</td>
+        <td class="amount">${esc(fmtAmount(inv.amount))}${inv.currency && inv.currency !== 'MKD' ? ' ' + esc(inv.currency) : ''}</td>
+        <td class="amount">${esc(fmtAmount(inv.amount_mkd))}</td>
+        <td>${esc(accountLabel(inv.bank_account))}</td>
         <td>${invoiceStatusCell(inv.payment_status)}</td>
         <td>${invoiceActionButtons(inv.id)}</td>
       </tr>`).join('');
@@ -1940,7 +2202,7 @@ function renderInvoiceGroup() {
       <div class="group-body"><table>
         <thead><tr>
           <th>${esc(s.invReceived)}</th><th>${esc(s.invInternal)}</th><th>${esc(s.invNumber)}</th>
-          <th>${esc(s.invAmount)}</th><th>${esc(s.invAccount)}</th><th>${esc(s.invStatus)}</th><th></th>
+          <th>${esc(s.invAmount)}</th><th>${esc(s.invMkd)}</th><th>${esc(s.invAccount)}</th><th>${esc(s.invStatus)}</th><th></th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table></div>
@@ -1973,7 +2235,78 @@ async function suggestInvoiceNumber(receivedDate) {
   return data.internal_number || '';
 }
 
+function parseAmount(raw) {
+  if (!raw) return null;
+  let text = String(raw).replace(/\s/g, '');
+  if (text.includes(',')) text = text.replace(/\./g, '').replace(',', '.');
+  else if ((text.match(/\./g) || []).length > 1) text = text.replace(/\./g, '');
+  else if (/^\d+\.\d{3}$/.test(text)) text = text.replace('.', '');
+  const n = Number(text);
+  return Number.isNaN(n) ? null : n;
+}
+
+function fmtRate(value) {
+  if (value == null || value === '') return '';
+  const n = Number(value);
+  if (Number.isNaN(n)) return '';
+  const [whole, frac] = n.toFixed(4).split('.');
+  return whole + ',' + frac;
+}
+
+function updateMkdPreview() {
+  const group = document.getElementById('mkdAmountGroup');
+  const field = document.getElementById('iAmountMkd');
+  const currency = document.getElementById('iCurrency').value || 'MKD';
+  if (currency === 'MKD') {
+    group.classList.add('hidden');
+    field.value = '';
+    return;
+  }
+  group.classList.remove('hidden');
+  const amount = parseAmount(document.getElementById('iAmount').value.trim());
+  if (amount == null || !invoiceRate) {
+    field.value = '';
+    return;
+  }
+  field.value = fmtAmount(amount * invoiceRate);
+}
+
+async function refreshRate(force) {
+  const hint = document.getElementById('iRateHint');
+  const btn = document.getElementById('btnRefreshRate');
+  if (btn) btn.textContent = lang === 'en' ? 'Refresh rate' : 'Освежи курс';
+  if (!hint) return;
+  const currency = document.getElementById('iCurrency').value || 'MKD';
+  const date = document.getElementById('iReceived').value;
+  if (currency === 'MKD') {
+    invoiceRate = null;
+    hint.textContent = lang === 'en' ? 'Denar amount, no conversion.' : 'Денарски износ, без конверзија.';
+    updateMkdPreview();
+    return;
+  }
+  if (!date) {
+    hint.textContent = '';
+    updateMkdPreview();
+    return;
+  }
+  hint.textContent = lang === 'en' ? 'Loading NBRM rate…' : 'Се вчитува курсот од НБРМ…';
+  const res = await fetch('/api/invoices/rate?currency=' + encodeURIComponent(currency) +
+    '&date=' + encodeURIComponent(date) + (force ? '&refresh=1' : ''));
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    invoiceRate = null;
+    hint.textContent = data.error || (lang === 'en' ? 'NBRM rate is unavailable.' : 'Курсот од НБРМ не е достапен.');
+    updateMkdPreview();
+    return;
+  }
+  invoiceRate = Number(data.rate);
+  hint.textContent = (lang === 'en' ? 'NBRM middle rate' : 'Среден курс НБРМ') +
+    ' ' + fmtDate(data.list_date) + ': 1 ' + currency + ' = ' + fmtRate(data.rate) + ' MKD';
+  updateMkdPreview();
+}
+
 async function onInvoiceReceivedChange() {
+  refreshRate();
   if (currentInvoice || iInternalTouched) return;
   const received = document.getElementById('iReceived').value;
   if (!received) return;
@@ -2007,9 +2340,13 @@ async function openInvoiceModal(id = null) {
     document.getElementById('iTax').value = inv?.tax_number || '';
     setDatePair('iInvoiceDate', 'iInvoiceDateTxt', inv?.invoice_date);
     setDatePair('iDue', 'iDueTxt', inv?.due_date);
-    document.getElementById('iAmount').value = inv?.amount == null ? '' : String(inv.amount).replace('.', ',');
-    document.getElementById('iCurrency').value = inv?.currency || 'MKD';
-    document.getElementById('iAccount').value = inv?.bank_account || '';
+    document.getElementById('iAmount').value = fmtAmount(inv?.amount);
+    delete document.getElementById('iAmount').dataset.decimals;
+    document.getElementById('iCurrency').value = ['MKD', 'EUR', 'USD'].includes(inv?.currency) ? inv.currency : 'MKD';
+    invoiceRate = inv?.currency === 'MKD' ? null : Number(inv?.exchange_rate) || null;
+    updateMkdPreview();
+    fillAccountSelect(inv?.bank_account || '');
+    refreshRate();
     document.getElementById('iStatus').value = inv?.payment_status || 'pending';
     document.getElementById('iNotes').value = inv?.notes || '';
   } else {
@@ -2018,13 +2355,18 @@ async function openInvoiceModal(id = null) {
     setDatePair('iReceived', 'iReceivedTxt', today);
     document.getElementById('iInternal').value = await suggestInvoiceNumber(today);
     iSuggested = document.getElementById('iInternal').value;
-    ['iSupplier', 'iNumber', 'iTax', 'iAccount', 'iNotes'].forEach(field => {
+    ['iSupplier', 'iNumber', 'iTax', 'iNotes'].forEach(field => {
       document.getElementById(field).value = '';
     });
     setDatePair('iInvoiceDate', 'iInvoiceDateTxt', '');
     setDatePair('iDue', 'iDueTxt', '');
     document.getElementById('iAmount').value = '';
+    delete document.getElementById('iAmount').dataset.decimals;
     document.getElementById('iCurrency').value = 'MKD';
+    invoiceRate = null;
+    updateMkdPreview();
+    fillAccountSelect('');
+    refreshRate();
     document.getElementById('iStatus').value = 'pending';
   }
   document.getElementById('invoiceOverlay').classList.add('open');
@@ -2066,13 +2408,14 @@ async function saveInvoice() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
+  const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
     errEl.textContent = body.error || 'Error';
     errEl.style.display = 'block';
     return;
   }
   closeInvoiceModal();
+  if (body.rate_warning) alert(body.rate_warning);
   await loadInvoices();
 }
 
@@ -2098,12 +2441,15 @@ function exportInvoices(fmt) {
   });
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    closeUsersModal();
-    closePackageModal();
-    closePartnersModal();
-    closeInvoiceModal();
+  if (e.key !== 'Escape') return;
+  if (calState) {
+    closeCalendar();
+    return;
   }
+  closeUsersModal();
+  closePackageModal();
+  closePartnersModal();
+  closeInvoiceModal();
 });
 
 (async () => {

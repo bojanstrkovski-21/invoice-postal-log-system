@@ -72,6 +72,9 @@ def init_db():
                 bank_account        TEXT,
                 amount              REAL,
                 currency            TEXT DEFAULT 'MKD',
+                exchange_rate       REAL,
+                rate_date           TEXT,
+                amount_mkd          REAL,
                 payment_status      TEXT NOT NULL DEFAULT 'pending'
                                     CHECK (payment_status IN ('pending', 'paid', 'cancelled')),
                 notes               TEXT,
@@ -89,6 +92,9 @@ def init_db():
         _add_column(conn, 'packages', 'tax_number', 'TEXT')
         _add_column(conn, 'invoices', 'tax_number', 'TEXT')
         _add_column(conn, 'invoices', 'supplier_name', 'TEXT')
+        _add_column(conn, 'invoices', 'exchange_rate', 'REAL')
+        _add_column(conn, 'invoices', 'rate_date', 'TEXT')
+        _add_column(conn, 'invoices', 'amount_mkd', 'REAL')
         count = conn.execute('SELECT COUNT(*) FROM users').fetchone()[0]
         if count == 0:
             conn.execute(

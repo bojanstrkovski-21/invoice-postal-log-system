@@ -7,6 +7,7 @@ from flask import Blueprint, current_app, jsonify, request
 
 from auth import admin_required, login_required
 from db import get_db
+from nbrm import NbrmError, lookup_rate
 
 invoices_bp = Blueprint('invoices', __name__, url_prefix='/api/invoices')
 
@@ -68,10 +69,49 @@ def _amount(value):
             text = text.replace(',', '')
     elif ',' in text:
         text = text.replace(',', '.')
+    elif text.count('.') > 1:
+        text = text.replace('.', '')
+    elif text.count('.') == 1:
+        left, right = text.split('.')
+        if len(right) == 3 and left.isdigit() and right.isdigit():
+            text = left + right
     try:
         return float(text), None
     except ValueError:
         return None, 'Invalid amount'
+
+
+ACCOUNTS = {
+    '787': '787 — сметка за самофинансирачки активности',
+    '903': '903 — сметка за наменска дотација',
+    '785': '785 — донаторски сметки',
+}
+
+
+def format_amount(value):
+    if value is None:
+        return ''
+    negative = float(value) < 0
+    whole, frac = f'{abs(float(value)):.2f}'.split('.')
+    grouped = ''
+    for index, char in enumerate(reversed(whole)):
+        if index and index % 3 == 0:
+            grouped = '.' + grouped
+        grouped = char + grouped
+    return ('-' if negative else '') + grouped + ',' + frac
+
+
+def format_rate(value):
+    if value is None:
+        return ''
+    whole, frac = f'{float(value):.4f}'.split('.')
+    return whole + ',' + frac
+
+
+def account_label(code):
+    if not code:
+        return ''
+    return ACCOUNTS.get(code, code)
 
 
 def next_internal_number(db, year):
@@ -144,7 +184,7 @@ def _parse_invoice(data):
     if status not in PAYMENT_STATUSES:
         return None, 'Invalid payment status'
     currency = (_clean(data.get('currency')) or 'MKD').upper()
-    if len(currency) > 8:
+    if currency not in ('MKD', 'EUR', 'USD'):
         return None, 'Invalid currency'
     internal = _clean(data.get('internal_number'))
     if len(internal) > 40:
@@ -161,6 +201,10 @@ def _parse_invoice(data):
         'bank_account': _optional(data.get('bank_account')),
         'amount': amount,
         'currency': currency,
+        'exchange_rate': None,
+        'rate_date': None,
+        'amount_mkd': None,
+        'rate_warning': None,
         'payment_status': status,
         'notes': _optional(data.get('notes')),
         'year': int(received_date[:4]),
@@ -180,6 +224,9 @@ def _values(parsed):
         parsed['bank_account'],
         parsed['amount'],
         parsed['currency'],
+        parsed['exchange_rate'],
+        parsed['rate_date'],
+        parsed['amount_mkd'],
         parsed['payment_status'],
         parsed['notes'],
         parsed['year'],
@@ -233,6 +280,53 @@ def next_number():
     })
 
 
+def apply_exchange(parsed):
+    if parsed['currency'] == 'MKD':
+        parsed['exchange_rate'] = 1
+        parsed['rate_date'] = parsed['received_date']
+        parsed['amount_mkd'] = parsed['amount']
+        parsed['rate_warning'] = None
+        return parsed
+    try:
+        rate = lookup_rate(parsed['currency'], parsed['received_date'])
+    except NbrmError as exc:
+        parsed['exchange_rate'] = None
+        parsed['rate_date'] = None
+        parsed['amount_mkd'] = None
+        parsed['rate_warning'] = str(exc)
+        return parsed
+    parsed['exchange_rate'] = rate['rate']
+    parsed['rate_date'] = rate['list_date']
+    if parsed['amount'] is None:
+        parsed['amount_mkd'] = None
+    else:
+        parsed['amount_mkd'] = round(parsed['amount'] * rate['rate'], 2)
+    parsed['rate_warning'] = None
+    return parsed
+
+
+def _with_warning(row, warning):
+    if warning:
+        row = dict(row)
+        row['rate_warning'] = warning
+    return row
+
+
+@invoices_bp.route('/rate')
+@login_required
+def exchange_rate():
+    currency = _clean(request.args.get('currency')).upper() or 'MKD'
+    day, error = _date(request.args.get('date'), required=True)
+    if error:
+        return jsonify({'error': error}), 400
+    force = request.args.get('refresh') == '1'
+    try:
+        rate = lookup_rate(currency, day, force=force)
+    except NbrmError as exc:
+        return jsonify({'error': str(exc)}), 502
+    return jsonify(rate)
+
+
 @invoices_bp.route('', methods=['GET'])
 @login_required
 def get_invoices():
@@ -248,6 +342,7 @@ def create_invoice():
     parsed, error = _parse_invoice(data)
     if error:
         return jsonify({'error': error}), 400
+    apply_exchange(parsed)
     db = get_db()
     db.execute('BEGIN IMMEDIATE')
     try:
@@ -257,15 +352,16 @@ def create_invoice():
             '''INSERT INTO invoices (
                    internal_number, invoice_number, invoice_date, received_date, due_date,
                    partner_id, supplier_name, tax_number, bank_account, amount, currency,
-                   payment_status, notes, year
-               ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',
+                   exchange_rate, rate_date, amount_mkd, payment_status, notes, year
+               ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',
             _values(parsed)
         )
         db.commit()
     except sqlite3.IntegrityError:
         db.rollback()
         return _duplicate()
-    return jsonify(_list_query('i.id = ?', [cur.lastrowid], 'i.id')[0]), 201
+    row = _list_query('i.id = ?', [cur.lastrowid], 'i.id')[0]
+    return jsonify(_with_warning(row, parsed['rate_warning'])), 201
 
 
 @invoices_bp.route('/<int:invoice_id>', methods=['PUT'])
@@ -277,6 +373,7 @@ def update_invoice(invoice_id):
         return jsonify({'error': error}), 400
     if not parsed['internal_number']:
         return jsonify({'error': 'Internal number is required'}), 400
+    apply_exchange(parsed)
     db = get_db()
     existing = db.execute('SELECT id FROM invoices WHERE id = ?', (invoice_id,)).fetchone()
     if not existing:
@@ -286,7 +383,8 @@ def update_invoice(invoice_id):
             '''UPDATE invoices SET
                    internal_number=?, invoice_number=?, invoice_date=?, received_date=?,
                    due_date=?, partner_id=?, supplier_name=?, tax_number=?, bank_account=?,
-                   amount=?, currency=?, payment_status=?, notes=?, year=?
+                   amount=?, currency=?, exchange_rate=?, rate_date=?, amount_mkd=?,
+                   payment_status=?, notes=?, year=?
                WHERE id=?''',
             (*_values(parsed), invoice_id)
         )
@@ -294,7 +392,8 @@ def update_invoice(invoice_id):
     except sqlite3.IntegrityError:
         db.rollback()
         return _duplicate()
-    return jsonify(_list_query('i.id = ?', [invoice_id], 'i.id')[0])
+    row = _list_query('i.id = ?', [invoice_id], 'i.id')[0]
+    return jsonify(_with_warning(row, parsed['rate_warning']))
 
 
 @invoices_bp.route('/<int:invoice_id>', methods=['DELETE'])
@@ -321,7 +420,8 @@ def export_invoices():
     rows = _list_query(where, params, 'i.received_date ASC, i.id ASC')
     headers = [
         'Внатрешен број', 'Број на фактура', 'Датум на фактура', 'Назив',
-        'Даночен број', 'Износ', 'Валута', 'Сметка', 'Датум на прием',
+        'Даночен број', 'Износ', 'Валута', 'Курс НБРМ', 'Износ во денари',
+        'Сметка', 'Датум на прием',
         'Рок на плаќање', 'Статус', 'Забелешка',
     ]
     fmt = request.args.get('format', 'csv')
@@ -333,9 +433,11 @@ def export_invoices():
             row['invoice_date'] or '',
             row['supplier_name'] or '',
             row['tax_number'] or '',
-            row['amount'] if row['amount'] is not None else '',
+            format_amount(row['amount']),
             row['currency'] or 'MKD',
-            row['bank_account'] or '',
+            format_rate(row.get('exchange_rate')),
+            format_amount(row.get('amount_mkd')),
+            account_label(row['bank_account']),
             row['received_date'],
             row['due_date'] or '',
             STATUS_LABELS.get(row['payment_status'], row['payment_status']),
@@ -357,7 +459,7 @@ def export_invoices():
             cell.fill = PatternFill('solid', fgColor='2563EB')
         for row in rows:
             ws.append(cells(row))
-        widths = [18, 18, 16, 28, 18, 14, 10, 14, 16, 16, 14, 24]
+        widths = [18, 18, 16, 28, 18, 14, 10, 14, 16, 42, 16, 16, 14, 24]
         for index, width in enumerate(widths, 1):
             ws.column_dimensions[chr(64 + index)].width = width
         buf = io.BytesIO()
